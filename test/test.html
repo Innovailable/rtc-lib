@@ -1,0 +1,13 @@
+<html>
+	<head>
+		<script src="../out/rtc.dep.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			var stream_p = rtc.media.createStream({audio: true, video: true});
+
+			stream_p.then(function(stream) { s = stream; console.log("done") }).fail(function(err) {console.log(err);})
+			console.log('yep')
+		</script>
+	</head>
+	<body>
+	</body>
+</html>
