@@ -5,15 +5,11 @@ class Stream
   BOTH: 'both'
 
 
-  constructor: (@stream) ->
+  constructor: (label, @stream) ->
 
 
-  setLabel: (label) ->
-    @stream.label = label
-
-
-  label: () ->
-    return @stream.label
+  id: () ->
+    return @stream.id
 
 
   hasAudio: () ->
