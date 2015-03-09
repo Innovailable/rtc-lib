@@ -1,10 +1,5 @@
 class Stream
 
-  AUDIO: 'audio'
-  VIDEO: 'video'
-  BOTH: 'both'
-
-
   constructor: (label, @stream) ->
 
 
@@ -12,12 +7,8 @@ class Stream
     return @stream.id
 
 
-  hasAudio: () ->
-    return stream.getAudioTracks().length > 0
-
-
-  hasVideo: () ->
-    return stream.getVideoTracks().length > 0
+  hasTracks: (type) ->
+    return @getTracks(type).length > 0
 
 
   getTracks: (type) ->

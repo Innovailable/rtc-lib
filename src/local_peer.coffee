@@ -12,7 +12,7 @@ class LocalPeer extends rtc.Peer
   status: (key, value) ->
     if key? and value?
       @status_obj[key] = value
-      @emit 'status_changed'
+      @emit 'status_changed', @status_obj
       return
     else if key?
       return @status_obj[key]

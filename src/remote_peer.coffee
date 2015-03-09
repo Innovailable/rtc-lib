@@ -8,6 +8,10 @@ class RemotePeer
     @direct_channel.on 'message', (data) =>
       @emit 'message', data
 
+    @direct_channel.on 'peer_update_status', (status) =>
+      @status_obj = status
+      @emit 'status_changed', status
+
     @direct_channel.on 'peer_left', () =>
       @close()
       @emit 'left'
