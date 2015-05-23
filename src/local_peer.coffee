@@ -2,7 +2,7 @@ q = require('q')
 
 rtc = require('./lib')
 
-class LocalPeer extends rtc.Peer
+class exports.LocalPeer extends rtc.Peer
 
   constructor: (@status_obj={}) ->
     @streams = {}
@@ -75,5 +75,3 @@ class LocalPeer extends rtc.Peer
     @emit 'configuration_changed'
     return
 
-
-exports.LocalPeer = LocalPeer

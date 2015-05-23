@@ -1,4 +1,4 @@
-class Stream
+class exports.Stream
 
   constructor: (label, @stream) ->
 
@@ -49,6 +49,3 @@ class Stream
 
   stop: () ->
     stream.stop()
-
-
-exports.Stream = Stream

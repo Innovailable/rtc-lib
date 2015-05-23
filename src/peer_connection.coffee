@@ -3,7 +3,7 @@ events = require('events')
 
 rtc = require('./lib')
 
-class PeerConnection extends events.EventEmitter
+class exports.PeerConnection extends events.EventEmitter
 
   constructor: (@direct_channel, @offering, @options) ->
     @pc = rtc.compat.PeerConnection(iceOptions())

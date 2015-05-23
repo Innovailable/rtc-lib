@@ -1,6 +1,6 @@
 rtc = require('./lib')
 
-class RemotePeer
+class exports.RemotePeer
 
   constructor: (@status_obj, @direct_channel, @peer_connection, @local) ->
     # communication
@@ -51,6 +51,3 @@ class RemotePeer
   close: () ->
     @pc.close()
     @emit 'closed'
-
-
-exports.RemotePeer = RemotePeer
