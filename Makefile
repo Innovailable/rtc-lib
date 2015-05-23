@@ -26,15 +26,15 @@ clean:
 
 $(BUNDLE): $(SOURCES) Makefile
 	@mkdir -p $(OUT_DIR)
-	browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d --no-bundle-external $(MAIN_SRC) > $@
+	browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d --no-bundle-external $(MAIN_SRC) -o $@
 
 $(DEP_BUNDLE): $(SOURCES) Makefile
 	@mkdir -p $(OUT_DIR)
-	browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d $(MAIN_SRC) > $@
+	browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d $(MAIN_SRC) -o $@
 
-%.min.js: %.js
-	uglifyjs --compress --mangle -- $< > $@
+%.min.js: %.js Makefile
+	uglifyjs --compress --mangle -o $@ -- $<
 
 
-.PHONY: all compile
+.PHONY: all compile min clean
 
