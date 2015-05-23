@@ -1,5 +1,4 @@
 EventEmitter = require('events').EventEmitter
-extend = require('extend')
 
 
 class SignalingPeer extends EventEmitter

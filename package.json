@@ -1,0 +1,16 @@
+{
+  "name": "rtc-lib",
+  "description": "An experimental promise based WebRTC library",
+  "author": "Stephan Thamm <thammi@chaossource.net>",
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/innovailable/innovailable/rtc-lib.git"
+  },
+  "version": "0.0.1",
+  "dependencies": {
+  },
+  "keywords": [
+    "webrtc"
+  ]
+}
