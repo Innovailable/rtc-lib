@@ -1,7 +1,7 @@
 EventEmitter = require('events').EventEmitter
 
 
-class SignalingPeer extends EventEmitter
+class MucSignalingPeer extends EventEmitter
 
   constructor: (@channel, @peer_id, @status) ->
     @channel.on 'message', (data) =>
@@ -41,7 +41,7 @@ class SignalingPeer extends EventEmitter
     })
 
 
-class exports.Signaling extends EventEmitter
+class exports.MucSignaling extends EventEmitter
 
   constructor: (@channel) ->
     @peers = {}
@@ -62,7 +62,7 @@ class exports.Signaling extends EventEmitter
             return
 
           for peer_id, status of data.peers
-            peer = new SignalingPeer(@channel, data.peer, data.status)
+            peer = new SignalingPeer(@channel, peer_id, status)
             @peers[peer_id] = peer
             @emit('peer_joined', peer)
 
@@ -76,10 +76,6 @@ class exports.Signaling extends EventEmitter
           peer = new SignalingPeer(@channel, data.peer, data.status)
           @peers[data.peer] = peer
           @emit('peer_joined', peer)
-
-
-  connect: () ->
-    return @channel.connect()
 
 
   join: (room, status={}) ->
@@ -102,3 +98,9 @@ class exports.Signaling extends EventEmitter
       status: status
     })
 
+
+  leave: () ->
+    @channel.send({
+      type: 'leave_room'
+    }).then () ->
+      @channel.close()

@@ -1,8 +1,9 @@
 q = require('q')
 
-rtc = require('./lib')
+Peer = require('./peer').Peer
 
-class exports.LocalPeer extends rtc.Peer
+
+class exports.LocalPeer extends Peer
 
   constructor: (@status_obj={}) ->
     @streams = {}

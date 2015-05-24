@@ -1,6 +1,6 @@
 # file locations
 
-SOURCES=$(wildcard src/*.coffee)
+SOURCES=$(wildcard src/*.coffee) $(wildcard src/*/*.coffee)
 MAIN_SRC=src/lib.coffee
 
 OUT_DIR=out

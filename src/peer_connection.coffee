@@ -1,19 +1,19 @@
 q = require('q')
-events = require('events')
+EventEmitter = require('events').EventEmitter
 
-rtc = require('./lib')
+compat = require('./compat')
 
-class exports.PeerConnection extends events.EventEmitter
+class exports.PeerConnection extends EventEmitter
 
-  constructor: (@direct_channel, @offering, @options) ->
-    @pc = rtc.compat.PeerConnection(iceOptions())
+  constructor: (@signaling, @offering, @options) ->
+    @pc = compat.PeerConnection(iceOptions())
 
     @connect_d = q.defer()
     @connected = false
 
     # signaling
 
-    @direct_channel.on 'signaling', (sdp) ->
+    @signaling.on 'signaling', (sdp) ->
       setRemoteSdp.then () ->
         if sdp.type == 'offer' and @connected
           answer()
@@ -22,18 +22,18 @@ class exports.PeerConnection extends events.EventEmitter
       , (err) ->
         connectError(err)
 
-    @direct_channel.on 'ice_candidate', (desc) =>
+    @signaling.on 'ice_candidate', (desc) =>
       candidate = new rtc.compat.IceCandidate(desc)
       @pc.addIceCandidate(candidate)
 
-    @direct_channel.on 'error', (err) =>
+    @signaling.on 'error', (err) =>
       # TODO: better error
       @connect_d.reject(new Error("Error from remote: " + err))
 
     # PeerConnection events
 
     @pc.onicecandidate = (event) =>
-      @direct_channel.send('ice_candidate', event.candidate)
+      @signaling.send('ice_candidate', event.candidate)
 
     @pc.onaddstream = (event) ->
       # TODO
@@ -108,7 +108,7 @@ class exports.PeerConnection extends events.EventEmitter
     res_d = q.defer()
 
     success = () =>
-      @direct_channel.send('signaling', sdp)
+      @signaling.send('signaling', sdp)
       res_d.resolve(sdp)
 
     @pc.setLocalDescription(success, res_d.reject)
@@ -119,7 +119,7 @@ class exports.PeerConnection extends events.EventEmitter
   connectError = (err) ->
     # TODO: better errors
     @connect_d.reject(err)
-    @direct_channel.send('error', err.message)
+    @signaling.send('error', err.message)
 
 
   addStream: (stream) ->

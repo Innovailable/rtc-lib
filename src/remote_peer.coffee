@@ -1,5 +1,3 @@
-rtc = require('./lib')
-
 class exports.RemotePeer
 
   constructor: (@status_obj, @direct_channel, @peer_connection, @local) ->

@@ -1,6 +1,7 @@
-events = require('events')
+EventEmitter = require('events').EventEmitter
 
-class exports.Peer extends events.EventEmitter
+
+class exports.Peer extends EventEmitter
 
   # default names
   @DEFAULT_CHANNEL: 'data'
