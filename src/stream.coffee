@@ -1,6 +1,6 @@
 class exports.Stream
 
-  constructor: (label, @stream) ->
+  constructor: (@stream) ->
 
 
   id: () ->

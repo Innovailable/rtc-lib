@@ -19,6 +19,9 @@ compile: $(BUNDLE) $(DEP_BUNDLE)
 
 min: $(MIN_BUNDLE) $(MIN_DEP_BUNDLE)
 
+watch:
+	while inotifywait -e close_write -r src ; do sleep 1; make; echo ; done
+
 # actual work
 
 clean:

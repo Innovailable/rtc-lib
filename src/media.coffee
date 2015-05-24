@@ -10,8 +10,6 @@ next_id = 0
 media.createStream = (obj={audio: true, video: true}) ->
   stream_d = q.defer()
 
-  console.log compat
-
   if obj instanceof compat.MediaStream
     # an actual stream
     stream_d.resolve(new Stream(obj))
