@@ -1,30 +1,36 @@
 q = require('q')
 EventEmitter = require('events').EventEmitter
 
-compat = require('./compat')
+compat = require('./compat').compat
 
 class exports.PeerConnection extends EventEmitter
 
   constructor: (@signaling, @offering, @options) ->
-    @pc = compat.PeerConnection(iceOptions())
+    @pc = new compat.PeerConnection(@iceOptions())
 
     @connect_d = q.defer()
     @connected = false
 
     # signaling
 
-    @signaling.on 'signaling', (sdp) ->
-      setRemoteSdp.then () ->
-        if sdp.type == 'offer' and @connected
-          answer()
-        
-        return
-      , (err) ->
-        connectError(err)
+    @signaling.on 'signaling', (data) =>
+      sdp = new compat.SessionDescription(data)
+
+      @setRemoteDescription(sdp).then () =>
+        if data.type == 'offer' and @connected
+          console.log 'we are sending the answer!'
+          return @answer()
+      .fail (err) =>
+        @connectError(err)
+      .done()
 
     @signaling.on 'ice_candidate', (desc) =>
-      candidate = new rtc.compat.IceCandidate(desc)
-      @pc.addIceCandidate(candidate)
+      if desc.candidate?
+        candidate = new rtc.compat.IceCandidate(desc)
+        @pc.addIceCandidate(candidate)
+      else
+        # TODO: end of ice trickling ... do something?
+        console.log("ICE trickling stopped")
 
     @signaling.on 'error', (err) =>
       # TODO: better error
@@ -54,13 +60,13 @@ class exports.PeerConnection extends EventEmitter
       if @pc.iceConnectionState in ['failed', 'closed']
         connectionError(new Error("Unable to establish ICE connection"))
       else if @pc.iceConnectionState in ['connected', 'completed']
-        @connected_d.resolve()
+        @connect_d.resolve()
 
     @pc.onsignalingstatechange = (event) ->
       # TODO
 
 
-  iceOptions = () ->
+  iceOptions: () ->
     servers = []
 
     if @options.stun?
@@ -73,14 +79,16 @@ class exports.PeerConnection extends EventEmitter
     }
 
 
-  oaOptions = () ->
+  oaOptions: () ->
     return {
-      offerToReceiveAudio: 1
-      offerToReceiveVideo: 1
+      mandatory: {
+        OfferToReceiveAudio: true
+        OfferToReceiveVideo: true
+      }
     }
 
 
-  setRemoteDescription = ->
+  setRemoteDescription: (sdp) ->
     res_d = q.defer()
 
     description = new rtc.compat.SessionDescription(sdp)
@@ -90,36 +98,50 @@ class exports.PeerConnection extends EventEmitter
     return res_d.promise
 
 
-  offer = () ->
+  offer: () ->
     res_d = q.defer()
-    @pc.createOffer(res_d.resolve, res_d.reject, oaOptions())
-    res_d.promise.then(processLocalSdp).fail (err) ->
-      connectError(err)
+
+    @pc.createOffer(res_d.resolve, res_d.reject, @oaOptions())
+
+    res_d.promise.then (sdp) =>
+      console.log(sdp)
+      return @processLocalSdp(sdp)
+    .fail (err) =>
+      @connectError(err)
+    .done()
 
 
-  answer = () ->
+  answer: () ->
     res_d = q.defer()
-    @pc.createAnswer(res_d.resolve, res_d.reject, oaOptions())
-    res_d.promise.then(processLocalSdp).fail (err) ->
-      connectError(err)
+
+    console.log(@oaOptions())
+    @pc.createAnswer(res_d.resolve, res_d.reject, @oaOptions())
+
+    res_d.promise.then (sdp) =>
+      console.log(sdp)
+      return @processLocalSdp(sdp)
+    .fail (err) =>
+      @connectError(err)
+    .done()
 
 
-  processLocalSdp = (sdp) ->
+  processLocalSdp: (sdp) ->
     res_d = q.defer()
 
     success = () =>
       @signaling.send('signaling', sdp)
       res_d.resolve(sdp)
 
-    @pc.setLocalDescription(success, res_d.reject)
+    @pc.setLocalDescription(sdp, success, res_d.reject)
 
     return res_d.promise
 
 
-  connectError = (err) ->
+  connectError: (err) ->
     # TODO: better errors
     @connect_d.reject(err)
     @signaling.send('error', err.message)
+    console.log(err)
 
 
   addStream: (stream) ->
@@ -134,10 +156,10 @@ class exports.PeerConnection extends EventEmitter
     if not @connected
       if @offering
         # we are starting the process
-        offer()
+        @offer()
       else if @pc.signalingState == 'have-remote-offer'
         # the other party is already waiting
-        answer()
+        @answer()
 
       @connected = true
 

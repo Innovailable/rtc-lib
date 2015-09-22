@@ -1,6 +1,7 @@
 q = require('q')
 
 Peer = require('./peer').Peer
+Stream = require('./stream').Stream
 
 
 class exports.LocalPeer extends Peer
@@ -61,14 +62,14 @@ class exports.LocalPeer extends Peer
 
     if typeof obj == 'function'
       # it is a promise
-      return setStream(obj)
-    else if stream instanceof stream
+      return saveStream(obj)
+    else if obj instanceof Stream
       # it is the actual stream, turn into promise
-      return setStream(q(obj))
+      return saveStream(q(obj))
     else
       # we assume we can pass it on to create a stream
-      stream_p = rtc.media.createStream(label, obj)
-      return setStream(stream_p)
+      stream_p = rtc.media.createStream(name, obj)
+      return saveStream(stream_p)
 
 
   removeStream: (name) ->

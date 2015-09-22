@@ -1,12 +1,15 @@
 Stream = require('./stream').Stream
 Peer = require('./peer').Peer
 
+
 class exports.MediaDomElement
 
   constructor: (@dom, data) ->
     if @dom.jquery?
       # TODO: warn if less/more than one element
       @dom = @dom[0]
+
+    # TODO: we want promises!
 
     if data?
       if data instanceof Stream

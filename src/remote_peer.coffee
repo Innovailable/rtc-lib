@@ -1,18 +1,10 @@
 class exports.RemotePeer
 
-  constructor: (@status_obj, @direct_channel, @peer_connection, @local) ->
+  constructor: (@peer_connection, @signaling, @local) ->
     # communication
 
-    @direct_channel.on 'message', (data) =>
+    @signaling.on 'message', (data) =>
       @emit 'message', data
-
-    @direct_channel.on 'peer_update_status', (status) =>
-      @status_obj = status
-      @emit 'status_changed', status
-
-    @direct_channel.on 'peer_left', () =>
-      @close()
-      @emit 'left'
 
     # pass on signals
 
@@ -39,13 +31,12 @@ class exports.RemotePeer
 
 
   message: (data) ->
-    @direct_channel.send('message', data)
+    @signaling.send('message', data)
 
 
   connect: () ->
-    return @pc.connect()
+    return @peer_connection.connect()
 
 
   close: () ->
-    @pc.close()
-    @emit 'closed'
+    @peer_connection.close()

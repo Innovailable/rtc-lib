@@ -2,7 +2,7 @@ q = require('q')
 EventEmitter = require('events').EventEmitter
 
 
-class WebSocketChannel extends EventEmitter
+class exports.WebSocketChannel extends EventEmitter
 
   constructor: (@address) ->
 
@@ -24,11 +24,14 @@ class WebSocketChannel extends EventEmitter
       # TODO: handle errors after connecting
       connect_d.reject(err)
 
-    @socket.onmessage = (raw) =>
+    @socket.onmessage = (event) =>
       try
-        @emit 'message', JSON.parse(raw)
-      catch SyntaxError
-        # TODO: error handling ...
+        data = JSON.parse(event.data)
+      catch
+        console.log('error parsing incoming message')
+        return
+
+      @emit('message', data)
 
     @socket.onclose = () =>
       @emit 'close'
@@ -38,7 +41,7 @@ class WebSocketChannel extends EventEmitter
 
   send: (msg) ->
     return @connect().then () =>
-      return @socket.send(msg)
+      return @socket.send(JSON.stringify(msg))
 
 
   close: () ->

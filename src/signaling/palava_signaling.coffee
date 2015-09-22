@@ -1,11 +1,13 @@
+q = require('q')
+
 EventEmitter = require('events').EventEmitter
 
 
 class PalavaSignalingPeer extends EventEmitter
 
-  constructor: (@channel, @peer_id, @status) ->
+  constructor: (@channel, @id, @status, @first) ->
     @channel.on 'message', (data) =>
-      if data.sender_id == @peer_id
+      if data.sender_id != @id
         # message is not for us
         return
 
@@ -13,11 +15,14 @@ class PalavaSignalingPeer extends EventEmitter
         @send('error', "Invalid message")
         return
 
+      @emit(data.event, data.data)
+
 
   send: (event, data={}) ->
+    console.log 'sending to id ', @id
     return @channel.send({
       event: 'send_to_peer'
-      peer_id: @peer_id
+      peer_id: @id
       data:
         event: event
         data: data
@@ -38,15 +43,15 @@ class exports.PalavaSignaling extends EventEmitter
         # invalid message
         return
 
-      switch data.type
+      switch data.event
         when 'joined_room'
           if not data.peers? or not data.own_id?
             # invalid ...
             return
 
-          for peer_id, status of data.peers
-            peer = new SignalingPeer(@channel, peer_id, status)
-            @peers[peer_id] = peer
+          for i, data of data.peers
+            peer = new PalavaSignalingPeer(@channel, data.peer_id, data.status, false)
+            @peers[data.peer_id] = peer
             @emit('peer_joined', peer)
 
           join_d.resolve()
@@ -56,7 +61,7 @@ class exports.PalavaSignaling extends EventEmitter
             # invalid ...
             return
 
-          peer = new SignalingPeer(@channel, data.peer_id, data.status)
+          peer = new PalavaSignalingPeer(@channel, data.peer_id, data.status, true)
           @peers[data.peer] = peer
           @emit('peer_joined', peer)
 
@@ -71,7 +76,7 @@ class exports.PalavaSignaling extends EventEmitter
       event: 'join_room'
       room_id: room
       status: status
-    }).then () ->
+    }).then () =>
       return @join_p
 
 
