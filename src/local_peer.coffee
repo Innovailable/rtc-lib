@@ -6,8 +6,6 @@ Stream = require('./stream').Stream
 
 class exports.LocalPeer extends Peer
 
-  DEFAULT_STREAM: 'stream'
-
   constructor: (@status_obj={}) ->
     @streams = {}
     @channels = {}
@@ -42,10 +40,6 @@ class exports.LocalPeer extends Peer
     delete @channels[name]
     @emit 'configuration_changed'
     return
-
-
-  stream: (name=@DEFAULT_STREAM) ->
-    return @streams[name]
 
 
   addStream: (name, obj) ->

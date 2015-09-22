@@ -6,6 +6,9 @@ EventEmitter = require('events').EventEmitter
 class PalavaSignalingPeer extends EventEmitter
 
   constructor: (@channel, @id, @status, @first) ->
+    @streams = @status.streams
+    @channels = @status.channels
+
     @channel.on 'message', (data) =>
       if data.sender_id != @id
         # message is not for us
@@ -66,11 +69,17 @@ class exports.PalavaSignaling extends EventEmitter
           @emit('peer_joined', peer)
 
 
-  join: (room, status={}) ->
+  join: (room, status, streams, channels) ->
     if @joined
       return Q.reject(new Error("Joined already"))
 
     @joined = true
+
+    status.streams = streams
+    status.channels = channels
+
+    console.log 'status'
+    console.log status
 
     return @channel.send({
       event: 'join_room'

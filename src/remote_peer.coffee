@@ -1,8 +1,31 @@
 q = require('q')
 
-class exports.RemotePeer
+Peer = require('./peer').Peer
+Stream = require('./stream').Stream
+
+class exports.RemotePeer extends Peer
 
   constructor: (@peer_connection, @signaling, @local) ->
+    # create streams
+
+    @streams = {}
+    @stream_defers = {}
+
+    for name, stream_id of @signaling.streams
+      defer = q.defer()
+
+      @stream_defers[stream_id] = defer
+      @streams[name] = defer.promise
+
+    # resolve streams
+
+    @peer_connection.on 'stream_added', (stream) =>
+      if not @stream_defers[stream.id]?
+        console.log("Unable to assign incoming stream to known stream")
+        return
+
+      @stream_defers[stream.id].resolve(new Stream(stream))
+
     # communication
 
     @signaling.on 'message', (data) =>

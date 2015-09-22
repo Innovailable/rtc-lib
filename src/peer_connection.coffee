@@ -1,4 +1,5 @@
 q = require('q')
+
 EventEmitter = require('events').EventEmitter
 
 compat = require('./compat').compat
@@ -41,10 +42,8 @@ class exports.PeerConnection extends EventEmitter
     @pc.onicecandidate = (event) =>
       @signaling.send('ice_candidate', event.candidate)
 
-    @pc.onaddstream = (event) ->
-      # TODO
-      console.log('stream added')
-      console.log(event.stream.id)
+    @pc.onaddstream = (event) =>
+      @emit('stream_added', event.stream)
 
     @pc.ondatachannel = (event) ->
       # TODO
@@ -65,7 +64,7 @@ class exports.PeerConnection extends EventEmitter
         @connect_d.resolve()
 
     @pc.onsignalingstatechange = (event) ->
-      # TODO
+      console.log(event)
 
 
   iceOptions: () ->
@@ -83,6 +82,7 @@ class exports.PeerConnection extends EventEmitter
 
   oaOptions: () ->
     return {
+      optional: []
       mandatory: {
         OfferToReceiveAudio: true
         OfferToReceiveVideo: true
@@ -147,8 +147,6 @@ class exports.PeerConnection extends EventEmitter
 
 
   addStream: (stream) ->
-    console.log 'adding stream'
-    console.log(stream.stream.id)
     @pc.addStream(stream.stream)
 
 
