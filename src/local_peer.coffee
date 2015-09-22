@@ -6,6 +6,8 @@ Stream = require('./stream').Stream
 
 class exports.LocalPeer extends Peer
 
+  DEFAULT_STREAM: 'stream'
+
   constructor: (@status_obj={}) ->
     @streams = {}
     @channels = {}
@@ -68,7 +70,7 @@ class exports.LocalPeer extends Peer
       return saveStream(q(obj))
     else
       # we assume we can pass it on to create a stream
-      stream_p = rtc.media.createStream(name, obj)
+      stream_p = rtc.media.createStream(obj)
       return saveStream(stream_p)
 
 

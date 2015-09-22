@@ -26,6 +26,7 @@ media.createStream = (obj={audio: true, video: true}) ->
       # TODO: convert error?
       stream_d.reject(err)
 
+    console.log(obj)
     compat.getUserMedia(obj, success, error)
 
   return stream_d.promise

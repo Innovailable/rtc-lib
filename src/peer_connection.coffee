@@ -43,6 +43,8 @@ class exports.PeerConnection extends EventEmitter
 
     @pc.onaddstream = (event) ->
       # TODO
+      console.log('stream added')
+      console.log(event.stream.id)
 
     @pc.ondatachannel = (event) ->
       # TODO
@@ -145,6 +147,8 @@ class exports.PeerConnection extends EventEmitter
 
 
   addStream: (stream) ->
+    console.log 'adding stream'
+    console.log(stream.stream.id)
     @pc.addStream(stream.stream)
 
 
