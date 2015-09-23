@@ -9,27 +9,39 @@ class exports.MediaDomElement
       # TODO: warn if less/more than one element
       @dom = @dom[0]
 
-    # TODO: we want promises!
-
     if data?
-      if data instanceof Stream
-        @attachStream(data)
-      else if data instanceof Peer
-        @attachPeer(data)
+      @attach(data)
+
+
+  attach: (data) ->
+    if data instanceof Stream
+      if mozGetUserMedia?
+        @dom.mozSrcObject = data.stream
       else
-        # TODO: warn?
+        @dom.src = URL.createObjectURL(data.stream)
 
+      @dom.play()
+    else if data instanceof Peer
+      stream = data.stream()
 
-  attachPeer: (peer) ->
-
-
-  attachStream: (stream) ->
-    if mozGetUserMedia?
-      @dom.mozSrcObject = stream.stream
+      if stream?
+        @attach(stream)
+      else
+        @error("Peer does not have a default stream")
+    else if data?.then?
+      data.then (res) =>
+        @attach(res)
+      .fail (err) =>
+        @error(err)
+      .done()
     else
-      @dom.src = URL.createObjectURL(stream.stream)
+      @error("Tried to attach invalid data")
 
-    @dom.play()
+
+  error: (err) ->
+    # TODO: do more with dom
+    @dom.stop()
+    console.log(err)
 
 
   clear: () ->

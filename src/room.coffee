@@ -19,7 +19,7 @@ class exports.Room extends EventEmitter
 
     @signaling.on 'peer_joined', (signaling_peer) =>
       pc = new PeerConnection(signaling_peer, signaling_peer.first, @options)
-      peer = new RemotePeer(pc, signaling_peer, @local)
+      peer = new RemotePeer(pc, signaling_peer, @local, @options)
 
       @peers[signaling_peer.id] = peer
       @emit('peer_joined', peer)
@@ -31,13 +31,16 @@ class exports.Room extends EventEmitter
     if not @join_p?
       streams = {}
 
-      for name, stream_promise of @local.streams
-        state = stream_promise.inspect()
+      for name, stream_p of @local.streams
+        state = stream_p.inspect()
 
         if state.value
           streams[name] = state.value.id()
         else
-          streams[name] = undefined
+          streams[name] = null
+          stream_p.done (stream) =>
+            streams[name] = stream.id()
+            @signaling.set_streams(streams)
 
       @join_p = @signaling.join(@name, @local.status(), streams, {})
 

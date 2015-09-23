@@ -1,35 +1,30 @@
 q = require('q')
 
 Peer = require('./peer').Peer
-Stream = require('./stream').Stream
+StreamCollection = require('./stream_collection.coffee').StreamCollection
+
 
 class exports.RemotePeer extends Peer
 
-  constructor: (@peer_connection, @signaling, @local) ->
+  constructor: (@peer_connection, @signaling, @local, @options) ->
     # create streams
 
-    @streams = {}
-    @stream_defers = {}
-
-    for name, stream_id of @signaling.streams
-      defer = q.defer()
-
-      @stream_defers[stream_id] = defer
-      @streams[name] = defer.promise
+    stream_collection = new StreamCollection(@signaling.streams)
+    @streams = stream_collection.streams
 
     # resolve streams
 
     @peer_connection.on 'stream_added', (stream) =>
-      if not @stream_defers[stream.id]?
-        console.log("Unable to assign incoming stream to known stream")
-        return
-
-      @stream_defers[stream.id].resolve(new Stream(stream))
+      stream_collection.resolve(stream)
 
     # communication
 
     @signaling.on 'message', (data) =>
       @emit 'message', data
+
+    # assign a name to a previously unnamed stream
+    @signaling.on 'update_streams', (data) =>
+      stream_collection.update(data)
 
     # pass on signals
 
@@ -42,6 +37,11 @@ class exports.RemotePeer extends Peer
     # prepare data channels
 
     # TODO
+
+    # we probably want to connect now
+
+    if not @options.auto_connect? or not @options.auto_connect
+      @connect().done()
 
 
   status: (key) ->

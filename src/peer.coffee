@@ -10,5 +10,3 @@ class exports.Peer extends EventEmitter
 
   stream: (name=@DEFAULT_STREAM) ->
     return @streams[name]
-
-

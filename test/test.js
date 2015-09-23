@@ -1,27 +1,24 @@
 $(function() {
-    var room = new rtc.Room("12345test", 'wss://signaling.innovailable.eu');
-    var stream_p = room.local.addStream({audio: true, video: true});
+    // create a room
+    var room = new rtc.Room("12345test", 'ws://ladon.local:8080');
 
+    // create and display local video/audio
+    var stream = room.local.addStream({audio: true, video: true});
+    var ve = new rtc.MediaDomElement($('#self'), stream);
+    ve.mute();
+
+    // join the room
+    room.join().done();
+
+    // create video for peers
     room.on('peer_joined', function(peer) {
-        console.log("peer joined");
-        console.log(peer);
+        console.log("new peer");
+        var view = $('<video>');
+        $('body').append(view);
+        var ve = new rtc.MediaDomElement(view, peer);
 
-        peer.connect().then(function() {
-            console.log("connected!");
-        }).done();
-
-        peer.stream().then(function(stream) {
-            var ve = new rtc.MediaDomElement($('#remote'), stream);
-            ve.mute();
-        }).done;
-    });
-
-    stream_p.then(function(stream) {
-        var ve = new rtc.MediaDomElement($('#self'), stream);
-        ve.mute();
-
-        return room.join().then(function() {
-            console.log('joined!');
+        peer.on('closed', function() {
+            view.remove();
         });
-    }).done();
+    });
 });

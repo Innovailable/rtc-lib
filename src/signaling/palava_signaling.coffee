@@ -20,9 +20,14 @@ class PalavaSignalingPeer extends EventEmitter
 
       @emit(data.event, data.data)
 
+    @on 'peer_updated_status', (status) =>
+      console.log 'status update!!!'
+      console.log status
+      @emit('update_status', status)
+      @emit('update_streams', status.streams)
+
 
   send: (event, data={}) ->
-    console.log 'sending to id ', @id
     return @channel.send({
       event: 'send_to_peer'
       peer_id: @id
@@ -78,9 +83,6 @@ class exports.PalavaSignaling extends EventEmitter
     status.streams = streams
     status.channels = channels
 
-    console.log 'status'
-    console.log status
-
     return @channel.send({
       event: 'join_room'
       room_id: room
@@ -93,6 +95,13 @@ class exports.PalavaSignaling extends EventEmitter
     return @channel.send({
       event: 'update_status'
       status: status
+    })
+
+
+  set_streams: (streams) ->
+    return @channel.send({
+      event: 'update_status'
+      status: {streams: streams}
     })
 
 

@@ -19,7 +19,6 @@ class exports.PeerConnection extends EventEmitter
 
       @setRemoteDescription(sdp).then () =>
         if data.type == 'offer' and @connected
-          console.log 'we are sending the answer!'
           return @answer()
       .fail (err) =>
         @connectError(err)
@@ -64,7 +63,7 @@ class exports.PeerConnection extends EventEmitter
         @connect_d.resolve()
 
     @pc.onsignalingstatechange = (event) ->
-      console.log(event)
+      #console.log(event)
 
 
   iceOptions: () ->
@@ -106,7 +105,6 @@ class exports.PeerConnection extends EventEmitter
     @pc.createOffer(res_d.resolve, res_d.reject, @oaOptions())
 
     res_d.promise.then (sdp) =>
-      console.log(sdp)
       return @processLocalSdp(sdp)
     .fail (err) =>
       @connectError(err)
@@ -116,11 +114,9 @@ class exports.PeerConnection extends EventEmitter
   answer: () ->
     res_d = q.defer()
 
-    console.log(@oaOptions())
     @pc.createAnswer(res_d.resolve, res_d.reject, @oaOptions())
 
     res_d.promise.then (sdp) =>
-      console.log(sdp)
       return @processLocalSdp(sdp)
     .fail (err) =>
       @connectError(err)
