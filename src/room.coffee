@@ -15,7 +15,7 @@ class exports.Room extends EventEmitter
       channel = new WebSocketChannel(@signaling)
       @signaling = new PalavaSignaling(channel)
 
-    @local = new LocalPeer()
+    @local = @options.local || new LocalPeer()
 
     @signaling.on 'peer_joined', (signaling_peer) =>
       pc = new PeerConnection(signaling_peer, signaling_peer.first, @options)
@@ -23,6 +23,9 @@ class exports.Room extends EventEmitter
 
       @peers[signaling_peer.id] = peer
       @emit('peer_joined', peer)
+
+      peer.on 'closed', () =>
+        delete @peers[signaling_peer.id]
 
     @peers = {}
 

@@ -9,12 +9,14 @@ class exports.MediaDomElement
       # TODO: warn if less/more than one element
       @dom = @dom[0]
 
-    if data?
-      @attach(data)
+    @attach(data)
 
 
   attach: (data) ->
-    if data instanceof Stream
+    # TODO: handle conflict between multiple calls
+    if not data?
+      # TODO: support empty data with placeholder
+    else if data instanceof Stream
       if mozGetUserMedia?
         @dom.mozSrcObject = data.stream
       else
@@ -22,12 +24,7 @@ class exports.MediaDomElement
 
       @dom.play()
     else if data instanceof Peer
-      stream = data.stream()
-
-      if stream?
-        @attach(stream)
-      else
-        @error("Peer does not have a default stream")
+      @attach(data.stream())
     else if data?.then?
       data.then (res) =>
         @attach(res)

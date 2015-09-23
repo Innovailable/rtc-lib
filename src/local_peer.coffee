@@ -31,6 +31,11 @@ class exports.LocalPeer extends Peer
       desc = name
       name = @DEFAULT_CHANNEL
 
+    if not desc?
+      desc = {
+        ordered: true
+      }
+
     @channels[name] = desc
     @emit 'configuration_changed'
     return

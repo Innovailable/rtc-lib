@@ -22,17 +22,19 @@ class exports.RemotePeer extends Peer
     @signaling.on 'message', (data) =>
       @emit 'message', data
 
-    # assign a name to a previously unnamed stream
     @signaling.on 'update_streams', (data) =>
       stream_collection.update(data)
+
+    @signaling.on 'closed', () =>
+      @emit('closed')
 
     # pass on signals
 
     @peer_connection.on 'connected', () =>
-      @emit 'connected'
+      @emit('connected')
 
     @peer_connection.on 'closed', () =>
-      @emit 'closed'
+      @emit 'lost'
 
     # prepare data channels
 

@@ -12,7 +12,6 @@ $(function() {
 
     // create video for peers
     room.on('peer_joined', function(peer) {
-        console.log("new peer");
         var view = $('<video>');
         $('body').append(view);
         var ve = new rtc.MediaDomElement(view, peer);

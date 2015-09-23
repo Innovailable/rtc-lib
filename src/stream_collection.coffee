@@ -16,8 +16,6 @@ class exports.StreamCollection extends EventEmitter
     members = []
     @waiting = {}
 
-    console.log 'updating streams'
-
     # remove old streams
 
     for name, stream_p in @streams
@@ -33,8 +31,7 @@ class exports.StreamCollection extends EventEmitter
           stream_p.then (stream) ->
             stream.close()
         else if stream_p.isPending()
-          # TODO: fail should get exception, not string
-          stream_p.fail("Stream removed before being established")
+          stream_p.reject(new Error("Stream removed before being established"))
 
     # update mappings
 
@@ -79,11 +76,7 @@ class exports.StreamCollection extends EventEmitter
       @defers[name].resolve(new Stream(stream))
       delete @defers[name]
 
-      console.log("resolved!")
-
     else
       # lets hope someone wants this later ...
 
       @pending[stream.id] = new Stream(stream)
-
-      console.log("pending!")

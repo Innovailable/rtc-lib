@@ -21,10 +21,11 @@ class PalavaSignalingPeer extends EventEmitter
       @emit(data.event, data.data)
 
     @on 'peer_updated_status', (status) =>
-      console.log 'status update!!!'
-      console.log status
       @emit('update_status', status)
       @emit('update_streams', status.streams)
+
+    @on 'peer_left', () =>
+      @emit('closed')
 
 
   send: (event, data={}) ->
