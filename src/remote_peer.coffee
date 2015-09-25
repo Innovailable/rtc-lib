@@ -2,8 +2,8 @@ q = require('q')
 
 Peer = require('./peer').Peer
 
-StreamCollection = require('./stream_collection').StreamCollection
-ChannelCollection = require('./channel_collection').ChannelCollection
+StreamCollection = require('./internal/stream_collection').StreamCollection
+ChannelCollection = require('./internal/channel_collection').ChannelCollection
 
 
 class exports.RemotePeer extends Peer
@@ -11,8 +11,8 @@ class exports.RemotePeer extends Peer
   constructor: (@peer_connection, @signaling, @local, @options) ->
     # create streams
 
-    stream_collection = new StreamCollection()
-    @streams = stream_collection.streams
+    @stream_collection = new StreamCollection()
+    @streams = @stream_collection.streams
     @streams_desc = {}
 
     # channels stuff
@@ -21,15 +21,10 @@ class exports.RemotePeer extends Peer
     @channels = @channel_collection.channels
     @channels_desc = {}
 
-    # promise waiting for connect attempt
-
-    wait_signaling_d = q.defer()
-    @wait_signaling_p = wait_signaling_d.promise
-
     # resolve streams and data channels
 
     @peer_connection.on 'stream_added', (stream) =>
-      stream_collection.resolve(stream)
+      @stream_collection.resolve(stream)
 
     @peer_connection.on 'data_channel_ready', (channel) =>
       @channel_collection.resolve(channel)
@@ -42,9 +37,8 @@ class exports.RemotePeer extends Peer
       @signaling.send('signaling', data)
 
     @signaling.on 'signaling', (data) =>
-      stream_collection.update(data.streams)
+      @stream_collection.update(data.streams)
       @channel_collection.setRemote(data.channels)
-      wait_signaling_d.resolve()
       @peer_connection.signaling(data)
 
     @peer_connection.on 'ice_candidate', (candidate) =>
@@ -128,11 +122,7 @@ class exports.RemotePeer extends Peer
 
 
   stream: (name=@DEFAULT_STREAM) ->
-    @wait_signaling_p.then () =>
-      if @streams[name]?
-        return @streams[name]
-      else
-        throw new Error("Stream not offered")
+    @stream_collection.get(name)
 
 
   channel: (name=@DEFAULT_CHANNEL) ->

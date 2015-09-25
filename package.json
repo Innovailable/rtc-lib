@@ -7,6 +7,9 @@
     "type": "git",
     "url": "https://github.com/innovailable/innovailable/rtc-lib.git"
   },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive"
+  },
   "version": "0.0.1",
   "dependencies": {
     "extend": "^3.0.0",
@@ -14,5 +17,11 @@
   },
   "keywords": [
     "webrtc"
-  ]
+  ],
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "chai-as-promised": "^5.1.0",
+    "coffee-script": "^1.10.0",
+    "mocha": "^2.3.3"
+  }
 }

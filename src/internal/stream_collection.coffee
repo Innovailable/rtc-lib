@@ -8,6 +8,9 @@ class exports.StreamCollection extends EventEmitter
     @waiting = {}
     @pending = {}
 
+    @wait_d = q.defer()
+    @wait_p = @wait_d.promise
+
 
   update: (data) ->
     members = []
@@ -62,6 +65,8 @@ class exports.StreamCollection extends EventEmitter
 
           @waiting[id] = name
 
+    @wait_d.resolve()
+
 
   resolve: (stream) ->
     id = stream.id()
@@ -79,3 +84,12 @@ class exports.StreamCollection extends EventEmitter
       # lets hope someone wants this later ...
 
       @pending[id] = stream
+
+
+  get: (name) ->
+    @wait_p.then () =>
+      if @streams[name]?
+        return @streams[name]
+      else
+        throw new Error("Stream not offered")
+
