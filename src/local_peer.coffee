@@ -60,7 +60,7 @@ class exports.LocalPeer extends Peer
       obj = name
       name = @DEFAULT_STREAM
 
-    if typeof obj == 'function'
+    if obj?.then?
       # it is a promise
       return saveStream(obj)
     else if obj instanceof Stream

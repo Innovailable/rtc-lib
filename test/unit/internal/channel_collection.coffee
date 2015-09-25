@@ -36,13 +36,13 @@ describe 'ChannelCollection', () ->
       coll.resolve(channel_a)
       coll.resolve(channel_b)
 
-    it 'should get channel a', () ->
+    it 'should get existing channel a', () ->
       return coll.get('a').should.become(channel_a)
 
-    it 'should get channel b', () ->
+    it 'should get existing channel b', () ->
       return coll.get('b').should.become(channel_b)
 
-    it 'should reject channel c', () ->
+    it 'should reject missing channel c', () ->
       return coll.get('c').should.be.rejectedWith(Error)
 
 
