@@ -7,10 +7,9 @@ $(function() {
     var ve = new rtc.MediaDomElement($('#self'), stream);
     ve.mute();
 
-    room.local.addDataChannel();
+    // add a data channel
 
-    // join the room
-    room.join().done();
+    room.local.addDataChannel();
 
     // create video for peers
     room.on('peer_joined', function(peer) {
@@ -29,4 +28,7 @@ $(function() {
             console.log(err);
         });
     });
+
+    // join the room
+    room.join().done();
 });

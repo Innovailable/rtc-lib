@@ -15,6 +15,8 @@ class exports.PeerConnection extends EventEmitter
     @connect_d = q.defer()
     @connected = false
 
+    @signaling_pending = []
+
     # PeerConnection events
 
     @pc.onicecandidate = (event) =>
@@ -159,7 +161,7 @@ class exports.PeerConnection extends EventEmitter
       channel = @pc.createDataChannel(name, options)
 
       channel.onopen = () =>
-        @emit('data_channel_added', new DataChannel(channel))
+        @emit('data_channel_ready', new DataChannel(channel))
 
 
   connect: () ->

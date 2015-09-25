@@ -8,21 +8,35 @@ class exports.ChannelCollection
     @defers = {}
     @pending = {}
 
+    @wait_d = q.defer()
+    @wait_p = @wait_d.promise
 
-  update: (local, remote) ->
-    console.log("update channels")
-    console.log(local)
-    console.log(remote)
+
+  setLocal: (data) ->
+    @local = data
+
+    if @remote?
+      @update()
+
+
+  setRemote: (data) ->
+    @remote = data
+
+    if @local?
+      @update()
+
+
+  update: () ->
     # create channel promises
     # TODO: warn if config differs
 
-    for name, config of remote
-      if local[name]?
+    for name, config of @remote
+      if @local[name]?
         if @channels[name]?
           # nothing to do
 
         else if @pending[name]?
-          # use the pinding channel
+          # use the pending channel
 
           channel = @pending[name]
           delete @pending[name]
@@ -41,11 +55,15 @@ class exports.ChannelCollection
         # TODO: better warning
         console.log("DataChannel offered by remote but not by local")
 
-    # notice local only channels
+    # notice @local only channels
 
-    for name of local
-      if not remote[name]?
+    for name of @local
+      if not @remote[name]?
         console.log("DataChannel offered by local but not by remote")
+
+    # we should be able to get channels from now on
+
+    @wait_d.resolve()
 
 
   resolve: (channel) ->
@@ -56,3 +74,11 @@ class exports.ChannelCollection
       delete @defers[label]
     else
       @pending[label] = channel
+
+
+  get: (name) ->
+    @wait_p.then () =>
+      if @channels[name]?
+        return @channels[name]
+      else
+        throw new Error("DataChannel not negotiated")

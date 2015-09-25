@@ -17,8 +17,8 @@ class exports.RemotePeer extends Peer
 
     # channels stuff
 
-    channel_collection = new ChannelCollection()
-    @channels = channel_collection.channels
+    @channel_collection = new ChannelCollection()
+    @channels = @channel_collection.channels
     @channels_desc = {}
 
     # promise waiting for connect attempt
@@ -32,7 +32,7 @@ class exports.RemotePeer extends Peer
       stream_collection.resolve(stream)
 
     @peer_connection.on 'data_channel_ready', (channel) =>
-      channel_collection.resolve(channel)
+      @channel_collection.resolve(channel)
 
     # wire up peer connection signaling
 
@@ -43,7 +43,7 @@ class exports.RemotePeer extends Peer
 
     @signaling.on 'signaling', (data) =>
       stream_collection.update(data.streams)
-      channel_collection.update(@channels_desc, data.channels)
+      @channel_collection.setRemote(data.channels)
       wait_signaling_d.resolve()
       @peer_connection.signaling(data)
 
@@ -114,6 +114,8 @@ class exports.RemotePeer extends Peer
           @peer_connection.addDataChannel(name, options)
           @channels_desc[name] = options
 
+        @channel_collection.setLocal(@channels_desc)
+
         # actually connect
 
         return @peer_connection.connect()
@@ -134,8 +136,4 @@ class exports.RemotePeer extends Peer
 
 
   channel: (name=@DEFAULT_CHANNEL) ->
-    @wait_signaling_p.then () =>
-      if @channels[name]?
-        return @channels[name]
-      else
-        throw new Error("DataChannel not negotiated")
+    @channel_collection.get(name)
