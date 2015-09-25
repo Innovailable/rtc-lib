@@ -2,50 +2,29 @@ q = require('q')
 
 EventEmitter = require('events').EventEmitter
 
+Stream = require('./stream').Stream
+DataChannel = require('./data_channel').DataChannel
+
 compat = require('./compat').compat
 
 class exports.PeerConnection extends EventEmitter
 
-  constructor: (@signaling, @offering, @options) ->
+  constructor: (@offering, @options) ->
     @pc = new compat.PeerConnection(@iceOptions())
 
     @connect_d = q.defer()
     @connected = false
 
-    # signaling
-
-    @signaling.on 'signaling', (data) =>
-      sdp = new compat.SessionDescription(data)
-
-      @setRemoteDescription(sdp).then () =>
-        if data.type == 'offer' and @connected
-          return @answer()
-      .fail (err) =>
-        @connectError(err)
-      .done()
-
-    @signaling.on 'ice_candidate', (desc) =>
-      if desc.candidate?
-        candidate = new rtc.compat.IceCandidate(desc)
-        @pc.addIceCandidate(candidate)
-      else
-        # TODO: end of ice trickling ... do something?
-        console.log("ICE trickling stopped")
-
-    @signaling.on 'error', (err) =>
-      # TODO: better error
-      @connect_d.reject(new Error("Error from remote: " + err))
-
     # PeerConnection events
 
     @pc.onicecandidate = (event) =>
-      @signaling.send('ice_candidate', event.candidate)
+      @emit('ice_candidate', event.candidate)
 
     @pc.onaddstream = (event) =>
-      @emit('stream_added', event.stream)
+      @emit('stream_added', new Stream(event.stream))
 
-    @pc.ondatachannel = (event) ->
-      # TODO
+    @pc.ondatachannel = (event) =>
+      @emit('data_channel_ready', new DataChannel(event.channel))
 
     @pc.onremovestream = (event) ->
       # TODO
@@ -64,6 +43,26 @@ class exports.PeerConnection extends EventEmitter
 
     @pc.onsignalingstatechange = (event) ->
       #console.log(event)
+
+
+  signaling: (data) ->
+    sdp = new compat.SessionDescription(data)
+
+    @setRemoteDescription(sdp).then () =>
+      if data.type == 'offer' and @connected
+        return @answer()
+    .fail (err) =>
+      @connectError(err)
+    .done()
+
+
+  addIceCandidate: (desc) ->
+    if desc.candidate?
+      candidate = new rtc.compat.IceCandidate(desc)
+      @pc.addIceCandidate(candidate)
+    else
+      # TODO: end of ice trickling ... do something?
+      console.log("ICE trickling stopped")
 
 
   iceOptions: () ->
@@ -127,7 +126,12 @@ class exports.PeerConnection extends EventEmitter
     res_d = q.defer()
 
     success = () =>
-      @signaling.send('signaling', sdp)
+      data  = {
+        sdp: sdp.sdp
+        type: sdp.type
+      }
+
+      @emit('signaling', data)
       res_d.resolve(sdp)
 
     @pc.setLocalDescription(sdp, success, res_d.reject)
@@ -138,8 +142,8 @@ class exports.PeerConnection extends EventEmitter
   connectError: (err) ->
     # TODO: better errors
     @connect_d.reject(err)
-    @signaling.send('error', err.message)
     console.log(err)
+    @emit('error', err)
 
 
   addStream: (stream) ->
@@ -148,6 +152,14 @@ class exports.PeerConnection extends EventEmitter
 
   removeSream: (stream) ->
     @pc.removeStream(stream.stream)
+
+
+  addDataChannel: (name, options) ->
+    if @offering
+      channel = @pc.createDataChannel(name, options)
+
+      channel.onopen = () =>
+        @emit('data_channel_added', new DataChannel(channel))
 
 
   connect: () ->

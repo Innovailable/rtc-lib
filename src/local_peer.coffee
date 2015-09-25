@@ -26,7 +26,7 @@ class exports.LocalPeer extends Peer
     return @channels[name]
 
 
-  addDataChanenl: (name, desc) ->
+  addDataChannel: (name, desc) ->
     if typeof name != 'string'
       desc = name
       name = @DEFAULT_CHANNEL
@@ -57,7 +57,6 @@ class exports.LocalPeer extends Peer
 
     # name can be omitted ... once
     if typeof name != 'string'
-      # TODO: automagic labels?
       obj = name
       name = @DEFAULT_STREAM
 
@@ -78,3 +77,6 @@ class exports.LocalPeer extends Peer
     @emit 'configuration_changed'
     return
 
+
+  stream: (name=@DEFAULT_STREAM) ->
+    return @streams[name]

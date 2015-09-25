@@ -1,16 +1,13 @@
 q = require('q')
 EventEmitter = require('events').EventEmitter
 
-Stream = require('./stream').Stream
-
 class exports.StreamCollection extends EventEmitter
 
-  constructor: (data, @streams={}) ->
+  constructor: (@streams={}) ->
     @defers = {}
     @waiting = {}
     @pending = {}
 
-    @update(data)
 
   update: (data) ->
     members = []
@@ -67,16 +64,18 @@ class exports.StreamCollection extends EventEmitter
 
 
   resolve: (stream) ->
-    if @waiting[stream.id]?
+    id = stream.id()
+
+    if @waiting[id]?
       # stream is expected
 
-      name = @waiting[stream.id]
-      delete @waiting[stream.id]
+      name = @waiting[id]
+      delete @waiting[id]
 
-      @defers[name].resolve(new Stream(stream))
+      @defers[name].resolve(stream)
       delete @defers[name]
 
     else
       # lets hope someone wants this later ...
 
-      @pending[stream.id] = new Stream(stream)
+      @pending[id] = stream

@@ -37,8 +37,8 @@ class exports.MediaDomElement
 
   error: (err) ->
     # TODO: do more with dom
-    @dom.stop()
     console.log(err)
+    @dom.stop()
 
 
   clear: () ->
