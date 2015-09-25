@@ -1,6 +1,6 @@
-{run_permutations} = require('../test_helper')
+{run_permutations} = require('../../test_helper')
 
-StreamCollection = require('../../src/internal/stream_collection').StreamCollection
+StreamCollection = require('../../../src/internal/stream_collection').StreamCollection
 
 class TestStream
   constructor: (@_id) ->
@@ -8,6 +8,7 @@ class TestStream
 
 stream = new TestStream("1234")
 stream2 = new TestStream("5678")
+
 
 describe 'StreamCollection', () ->
   describe 'Adding one stream', ->
@@ -21,8 +22,8 @@ describe 'StreamCollection', () ->
       get: get
     }
 
-    run_permutations "resolve stream", get_actions (done) -> coll.get("stream").should.become(stream).notify(done)
-    run_permutations "reject other", get_actions (done) -> coll.get("other").should.be.rejectedWith(Error).notify(done)
+    run_permutations("resolve stream", get_actions (done) -> coll.get("stream").should.become(stream).notify(done))
+    run_permutations("reject other", get_actions (done) -> coll.get("other").should.be.rejectedWith(Error).notify(done))
 
 
   describe 'Adding two streams', ->

@@ -1,6 +1,6 @@
-{run_permutations} = require('../test_helper')
+{run_permutations} = require('../../test_helper')
 
-ChannelCollection = require('../../src/internal/channel_collection').ChannelCollection
+ChannelCollection = require('../../../src/internal/channel_collection').ChannelCollection
 
 class TestChannel
   constructor: (@_label) ->
@@ -9,6 +9,7 @@ class TestChannel
 channel_a = new TestChannel('a')
 channel_b = new TestChannel('b')
 channel_c = new TestChannel('c')
+
 
 describe 'ChannelCollection', () ->
   coll = null
@@ -23,8 +24,8 @@ describe 'ChannelCollection', () ->
       get: get
     }
 
-    run_permutations "resolve channel", get_actions (done) -> coll.get('a').should.become(channel_a).notify(done)
-    run_permutations "reject other", get_actions (done) -> coll.get('other').should.be.rejectedWith(Error).notify(done)
+    run_permutations("resolve channel", get_actions (done) -> coll.get('a').should.become(channel_a).notify(done))
+    run_permutations("reject other", get_actions (done) -> coll.get('other').should.be.rejectedWith(Error).notify(done))
 
 
   describe 'Adding mutliple channels', () ->
