@@ -1,4 +1,5 @@
-q = require('q')
+Deferred = require('es6-deferred')
+Promise = require('es6-promise').Promise
 
 # TODO: does not remove channels known before ...
 
@@ -8,7 +9,7 @@ class exports.ChannelCollection
     @defers = {}
     @pending = {}
 
-    @wait_d = q.defer()
+    @wait_d = new Deferred()
     @wait_p = @wait_d.promise
 
 
@@ -41,12 +42,12 @@ class exports.ChannelCollection
           channel = @pending[name]
           delete @pending[name]
 
-          @channels[name] = q(channel)
+          @channels[name] = Promise.resolve(channel)
 
         else
           # create a defer for the channel
 
-          defer = q.defer()
+          defer = new Deferred()
 
           @channels[name] = defer.promise
           @defers[name] = defer

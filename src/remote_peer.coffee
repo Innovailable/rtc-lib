@@ -68,7 +68,7 @@ class exports.RemotePeer extends Peer
     # we probably want to connect now
 
     if not @options.auto_connect? or not @options.auto_connect
-      @connect().done()
+      @connect()
 
 
   status: (key) ->

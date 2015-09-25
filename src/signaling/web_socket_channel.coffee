@@ -1,4 +1,4 @@
-q = require('q')
+Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
 
@@ -13,7 +13,7 @@ class exports.WebSocketChannel extends EventEmitter
 
     @socket = new WebSocket(@address)
 
-    connect_d = q.defer()
+    connect_d = new Deferred()
     @connect_p = connect_d.promise
 
     @socket.onopen = () =>

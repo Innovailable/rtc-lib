@@ -24,11 +24,11 @@ $(function() {
         peer.channel().then(function(channel) {
             console.log("got the channel!");
             console.log(channel);
-        }).fail(function(err) {
+        }).catch(function(err) {
             console.log(err);
         });
     });
 
     // join the room
-    room.join().done();
+    room.join();
 });

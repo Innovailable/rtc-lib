@@ -28,9 +28,8 @@ class exports.MediaDomElement
     else if data?.then?
       data.then (res) =>
         @attach(res)
-      .fail (err) =>
+      .catch (err) =>
         @error(err)
-      .done()
     else
       @error("Tried to attach invalid data")
 

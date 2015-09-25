@@ -1,4 +1,4 @@
-q = require('q')
+Deferred = require('es6-deferred')
 
 EventEmitter = require('events').EventEmitter
 
@@ -12,7 +12,7 @@ class exports.PeerConnection extends EventEmitter
   constructor: (@offering, @options) ->
     @pc = new compat.PeerConnection(@iceOptions())
 
-    @connect_d = q.defer()
+    @connect_d = new Deferred()
     @connected = false
 
     @signaling_pending = []
@@ -53,9 +53,8 @@ class exports.PeerConnection extends EventEmitter
     @setRemoteDescription(sdp).then () =>
       if data.type == 'offer' and @connected
         return @answer()
-    .fail (err) =>
+    .catch (err) =>
       @connectError(err)
-    .done()
 
 
   addIceCandidate: (desc) ->
@@ -91,54 +90,41 @@ class exports.PeerConnection extends EventEmitter
 
 
   setRemoteDescription: (sdp) ->
-    res_d = q.defer()
-
-    description = new rtc.compat.SessionDescription(sdp)
-
-    @pc.setRemoteDescription(sdp, res_d.resolve, res_d.reject)
-
-    return res_d.promise
+    return new Promise (resolve, reject) =>
+      description = new rtc.compat.SessionDescription(sdp)
+      @pc.setRemoteDescription(sdp, resolve, reject)
 
 
   offer: () ->
-    res_d = q.defer()
-
-    @pc.createOffer(res_d.resolve, res_d.reject, @oaOptions())
-
-    res_d.promise.then (sdp) =>
+    return new Promise (resolve, reject) =>
+      @pc.createOffer(resolve, reject, @oaOptions())
+    .then (sdp) =>
       return @processLocalSdp(sdp)
-    .fail (err) =>
+    .catch (err) =>
       @connectError(err)
-    .done()
 
 
   answer: () ->
-    res_d = q.defer()
-
-    @pc.createAnswer(res_d.resolve, res_d.reject, @oaOptions())
-
-    res_d.promise.then (sdp) =>
+    new Promise (resolve, reject) =>
+      @pc.createAnswer(resolve, reject, @oaOptions())
+    .then (sdp) =>
       return @processLocalSdp(sdp)
-    .fail (err) =>
+    .catch (err) =>
       @connectError(err)
-    .done()
 
 
   processLocalSdp: (sdp) ->
-    res_d = q.defer()
+    new Promise (resolve, reject) =>
+      success = () =>
+        data  = {
+          sdp: sdp.sdp
+          type: sdp.type
+        }
 
-    success = () =>
-      data  = {
-        sdp: sdp.sdp
-        type: sdp.type
-      }
+        @emit('signaling', data)
+        resolve(sdp)
 
-      @emit('signaling', data)
-      res_d.resolve(sdp)
-
-    @pc.setLocalDescription(sdp, success, res_d.reject)
-
-    return res_d.promise
+      @pc.setLocalDescription(sdp, success, reject)
 
 
   connectError: (err) ->

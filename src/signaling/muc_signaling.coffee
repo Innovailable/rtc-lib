@@ -1,3 +1,4 @@
+Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
 
@@ -47,7 +48,7 @@ class exports.MucSignaling extends EventEmitter
     @peers = {}
     @joined = false
 
-    join_d = q.defer()
+    join_d = new Deferred()
     @join_p = join_d.promise
 
     @channel.on 'message', (data) =>

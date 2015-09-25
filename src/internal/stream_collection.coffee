@@ -1,4 +1,4 @@
-q = require('q')
+Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
 class exports.StreamCollection extends EventEmitter
@@ -8,7 +8,7 @@ class exports.StreamCollection extends EventEmitter
     @waiting = {}
     @pending = {}
 
-    @wait_d = q.defer()
+    @wait_d = new Deferred()
     @wait_p = @wait_d.promise
 
 
@@ -41,7 +41,7 @@ class exports.StreamCollection extends EventEmitter
       if not @streams[name]?
         # create stream promise
 
-        defer = q.defer()
+        defer = new Deferred()
 
         @streams[name] = defer.promise
         @defers[name] = defer
