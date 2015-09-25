@@ -1,4 +1,6 @@
-StreamCollection = require('../../src/internal/stream_collection.coffee').StreamCollection
+{run_permutations} = require('../test_helper')
+
+StreamCollection = require('../../src/internal/stream_collection').StreamCollection
 
 class TestStream
   constructor: (@_id) ->
@@ -9,68 +11,24 @@ stream2 = new TestStream("5678")
 
 describe 'StreamCollection', () ->
   describe 'Adding one stream', ->
-    it 'should get stream after update and resolve', () ->
-      coll = new StreamCollection()
+    coll = null
 
-      coll.update({stream: stream.id()})
-      coll.resolve(stream)
+    beforeEach () -> coll = new StreamCollection()
 
-      return coll.get("stream").should.become(stream)
+    get_actions = (get) -> {
+      update: () -> coll.update({stream: stream.id()})
+      resolve: () -> coll.resolve(stream)
+      get: get
+    }
 
-    it 'should get stream before update and resolve', () ->
-      coll = new StreamCollection()
+    run_permutations "resolve stream", get_actions (done) -> coll.get("stream").should.become(stream).notify(done)
+    run_permutations "reject other", get_actions (done) -> coll.get("other").should.be.rejectedWith(Error).notify(done)
 
-      promise = coll.get("stream").should.become(stream)
-
-      coll.update({stream: stream.id()})
-      coll.resolve(stream)
-
-      return promise
-
-    it 'should get stream between update and resolve', () ->
-      coll = new StreamCollection()
-
-      coll.update({stream: stream.id()})
-
-      promise = coll.get("stream").should.become(stream)
-
-      coll.resolve(stream)
-
-      return promise
-
-    it 'should reject other stream after update and resolve', () ->
-      coll = new StreamCollection()
-
-      coll.update({stream: stream.id()})
-      coll.resolve(stream)
-
-      return coll.get("other").should.be.rejectedWith(Error)
-
-    it 'should reject other stream before update and resolve', () ->
-      coll = new StreamCollection()
-
-      promise = coll.get("other").should.be.rejectedWith(Error)
-
-      coll.update({stream: stream.id()})
-      coll.resolve(stream)
-
-      return promise
-
-    it 'should reject other stream between update and resolve', () ->
-      coll = new StreamCollection()
-
-      coll.update({stream: stream.id()})
-
-      promise = coll.get("other").should.be.rejectedWith(Error)
-
-      coll.resolve(stream)
-
-      return promise
 
   describe 'Adding two streams', ->
     coll = null
 
-    before =>
+    before () ->
       coll = new StreamCollection()
       coll.update({a: stream.id(), b: stream2.id()})
       coll.resolve(stream)
