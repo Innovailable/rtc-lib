@@ -15,21 +15,30 @@ class exports.MediaDomElement
   attach: (data) ->
     # TODO: handle conflict between multiple calls
     if not data?
-      # TODO: support empty data with placeholder
+      delete @stream
+
+      @dom.pause()
+      @dom.src = null
+
     else if data instanceof Stream
+      @stream = data
+
       if mozGetUserMedia?
         @dom.mozSrcObject = data.stream
       else
         @dom.src = URL.createObjectURL(data.stream)
 
       @dom.play()
+
     else if data instanceof Peer
       @attach(data.stream())
+
     else if data?.then?
       data.then (res) =>
         @attach(res)
       .catch (err) =>
         @error(err)
+
     else
       @error("Tried to attach invalid data")
 
@@ -37,12 +46,10 @@ class exports.MediaDomElement
   error: (err) ->
     # TODO: do more with dom
     console.log(err)
-    @dom.stop()
 
 
   clear: () ->
-    @dom.stop()
-    @dom.src = null
+    @attach()
 
 
   mute: (muted=true) ->

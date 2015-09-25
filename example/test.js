@@ -16,6 +16,7 @@ $(function() {
         var view = $('<video>');
         $('body').append(view);
         var ve = new rtc.MediaDomElement(view, peer);
+        ve.mute();
 
         peer.on('closed', function() {
             view.remove();

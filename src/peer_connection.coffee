@@ -10,7 +10,7 @@ compat = require('./compat').compat
 class exports.PeerConnection extends EventEmitter
 
   constructor: (@offering, @options) ->
-    @pc = new compat.PeerConnection(@iceOptions())
+    @pc = new compat.PeerConnection(@_iceOptions())
 
     @connect_d = new Deferred()
     @connected = false
@@ -50,11 +50,11 @@ class exports.PeerConnection extends EventEmitter
   signaling: (data) ->
     sdp = new compat.SessionDescription(data)
 
-    @setRemoteDescription(sdp).then () =>
+    @_setRemoteDescription(sdp).then () =>
       if data.type == 'offer' and @connected
-        return @answer()
+        return @_answer()
     .catch (err) =>
-      @connectError(err)
+      @_connectError(err)
 
 
   addIceCandidate: (desc) ->
@@ -66,7 +66,7 @@ class exports.PeerConnection extends EventEmitter
       console.log("ICE trickling stopped")
 
 
-  iceOptions: () ->
+  _iceOptions: () ->
     servers = []
 
     if @options.stun?
@@ -79,7 +79,7 @@ class exports.PeerConnection extends EventEmitter
     }
 
 
-  oaOptions: () ->
+  _oaOptions: () ->
     return {
       optional: []
       mandatory: {
@@ -89,31 +89,31 @@ class exports.PeerConnection extends EventEmitter
     }
 
 
-  setRemoteDescription: (sdp) ->
+  _setRemoteDescription: (sdp) ->
     return new Promise (resolve, reject) =>
       description = new rtc.compat.SessionDescription(sdp)
       @pc.setRemoteDescription(sdp, resolve, reject)
 
 
-  offer: () ->
+  _offer: () ->
     return new Promise (resolve, reject) =>
-      @pc.createOffer(resolve, reject, @oaOptions())
+      @pc.createOffer(resolve, reject, @_oaOptions())
     .then (sdp) =>
-      return @processLocalSdp(sdp)
+      return @_processLocalSdp(sdp)
     .catch (err) =>
-      @connectError(err)
+      @_connectError(err)
 
 
-  answer: () ->
+  _answer: () ->
     new Promise (resolve, reject) =>
-      @pc.createAnswer(resolve, reject, @oaOptions())
+      @pc.createAnswer(resolve, reject, @_oaOptions())
     .then (sdp) =>
-      return @processLocalSdp(sdp)
+      return @_processLocalSdp(sdp)
     .catch (err) =>
-      @connectError(err)
+      @_connectError(err)
 
 
-  processLocalSdp: (sdp) ->
+  _processLocalSdp: (sdp) ->
     new Promise (resolve, reject) =>
       success = () =>
         data  = {
@@ -127,7 +127,7 @@ class exports.PeerConnection extends EventEmitter
       @pc.setLocalDescription(sdp, success, reject)
 
 
-  connectError: (err) ->
+  _connectError: (err) ->
     # TODO: better errors
     @connect_d.reject(err)
     console.log(err)
@@ -154,10 +154,10 @@ class exports.PeerConnection extends EventEmitter
     if not @connected
       if @offering
         # we are starting the process
-        @offer()
+        @_offer()
       else if @pc.signalingState == 'have-remote-offer'
         # the other party is already waiting
-        @answer()
+        @_answer()
 
       @connected = true
 
