@@ -1,5 +1,5 @@
 Deferred = require('es6-deferred')
-Promise = require('es6-promise').Promise
+Promise = require('../compat').compat.Promise
 
 # TODO: does not remove channels known before ...
 

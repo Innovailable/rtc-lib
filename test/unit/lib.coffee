@@ -1,6 +1,3 @@
-global.window = {}
-global.navigator = {}
-
 rtc = require('../../src/lib.coffee')
 
 expect = require('chai').expect

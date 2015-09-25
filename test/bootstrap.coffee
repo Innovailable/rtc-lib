@@ -5,3 +5,6 @@ chaiAsPromised = require("chai-as-promised")
 chai.use(chaiAsPromised)
 chai.should()
 
+global.window = {}
+global.navigator = {}
+

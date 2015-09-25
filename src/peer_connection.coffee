@@ -1,6 +1,6 @@
 Deferred = require('es6-deferred')
-
 EventEmitter = require('events').EventEmitter
+Promise = require('./compat').compat.Promise
 
 Stream = require('./stream').Stream
 DataChannel = require('./data_channel').DataChannel
