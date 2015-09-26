@@ -1,4 +1,4 @@
-{DataChannel} = require('../../../src/data_channel')
+{DataChannel} = require('../../src/data_channel')
 
 expect = require('chai').expect
 
