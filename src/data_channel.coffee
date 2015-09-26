@@ -4,14 +4,13 @@ EventEmitter = require('events').EventEmitter
 
 class exports.DataChannel extends EventEmitter
 
-  constructor: (@channel) ->
+  constructor: (@channel, @max_buffer=1024*10) ->
     @connected = false
     @connect_queue = []
 
     # buffer management
 
     @send_buffer = []
-    @max_buffer = 1024 * 10
 
     # event handling
 

@@ -35,10 +35,10 @@ describe 'StreamCollection', () ->
       coll.resolve(stream)
       coll.resolve(stream2)
 
-    it 'should get existing stream a', () ->
+    it 'should resolve existing stream a', () ->
       return coll.get('a').should.become(stream)
 
-    it 'should get existing stream b', () ->
+    it 'should resolve existing stream b', () ->
       return coll.get('b').should.become(stream2)
 
     it 'should reject missing stream c', () ->
