@@ -5,18 +5,18 @@ EventEmitter = require('events').EventEmitter
 class exports.DataChannel extends EventEmitter
 
   constructor: (@channel, @max_buffer=1024*10) ->
-    @connected = false
-    @connect_queue = []
+    @_connected = false
+    @_connect_queue = []
 
     # buffer management
 
-    @send_buffer = []
+    @_send_buffer = []
 
     # event handling
 
     @channel.onmessage = (event) =>
-      if not @connected
-        @connect_queue.push(event.data)
+      if not @_connected
+        @_connect_queue.push(event.data)
       else
         @emit('message', event.data)
 
@@ -28,12 +28,12 @@ class exports.DataChannel extends EventEmitter
 
 
   connect: () ->
-    @connected = true
+    @_connected = true
 
-    for data in @connect_queue
+    for data in @_connect_queue
       @emit('message', data)
 
-    delete @connect_queue
+    delete @_connect_queue
 
     return Promise.resolve()
 
@@ -43,14 +43,14 @@ class exports.DataChannel extends EventEmitter
 
 
   send: (data) ->
-    if not @connected
+    if not @_connected
       @connect()
       console.log("Sending without being connected. Please call connect() on the data channel to start using it.")
 
     defer = new Deferred()
-    @send_buffer.push([data, defer])
+    @_send_buffer.push([data, defer])
 
-    if @send_buffer.length == 1
+    if @_send_buffer.length == 1
       @_actualSend()
 
     return defer.promise
@@ -60,14 +60,14 @@ class exports.DataChannel extends EventEmitter
     if @channel.readyState == 'open'
       # actual sending
       # TODO: help user with max package size?
-      while @send_buffer.length
+      while @_send_buffer.length
         # should we keep sending right now?
         if @channel.bufferedAmount >= @max_buffer
           # TODO: less cpu heavy timeout value?
           setTimeout(@_actualSend.bind(@), 1)
           return
 
-        [data, defer] = @send_buffer[0]
+        [data, defer] = @_send_buffer[0]
 
         try
           @channel.send(data)
@@ -79,10 +79,10 @@ class exports.DataChannel extends EventEmitter
 
         defer.resolve()
 
-        @send_buffer.shift()
+        @_send_buffer.shift()
 
     else
       # fail the send promises
-      while @send_buffer.length
-        [data, defer] = @send_buffer.shift()
+      while @_send_buffer.length
+        [data, defer] = @_send_buffer.shift()
         defer.reject(new Error("DataChannel closed"))

@@ -42,7 +42,7 @@ describe 'DataChannel', () ->
     it 'should be able to send and receive', () ->
       return simple_echo_test(channel)
 
-    it 'should receive data sent before being conencted', () ->
+    it 'should receive data sent before being connected', () ->
       recv_data = []
 
       echo.send("a")
