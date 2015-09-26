@@ -76,12 +76,13 @@ class exports.PalavaSignaling extends EventEmitter
 
     @joined = true
 
-    return @channel.send({
-      event: 'join_room'
-      room_id: room
-      status: status
-    }).then () =>
-      return @join_p
+    @channel.connect().then () =>
+      return @channel.send({
+        event: 'join_room'
+        room_id: room
+        status: status
+      }).then () =>
+        return @join_p
 
 
   set_status: (status) ->

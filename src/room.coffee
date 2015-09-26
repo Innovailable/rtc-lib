@@ -15,6 +15,8 @@ class exports.Room extends EventEmitter
       channel = new WebSocketChannel(@signaling)
       @signaling = new PalavaSignaling(channel)
 
+      @signaling.connect()
+
     @local = @options.local || new LocalPeer()
 
     @signaling.on 'peer_joined', (signaling_peer) =>
