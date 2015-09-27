@@ -24,7 +24,7 @@ describe 'ChannelCollection', () ->
       get: get
     }
 
-    run_permutations("resolve channel", get_actions (done) -> coll.get('a').should.become(channel_a).notify(done))
+    run_permutations("resolve channel", get_actions (done) -> coll.get('a').should.eventually.be.equal(channel_a).notify(done))
     run_permutations("reject other", get_actions (done) -> coll.get('other').should.be.rejectedWith(Error).notify(done))
 
 
@@ -37,10 +37,10 @@ describe 'ChannelCollection', () ->
       coll.resolve(channel_b)
 
     it 'should get existing channel a', () ->
-      return coll.get('a').should.become(channel_a)
+      return coll.get('a').should.eventually.be.equal(channel_a)
 
     it 'should get existing channel b', () ->
-      return coll.get('b').should.become(channel_b)
+      return coll.get('b').should.eventually.be.equal(channel_b)
 
     it 'should reject missing channel c', () ->
       return coll.get('c').should.be.rejectedWith(Error)
@@ -59,7 +59,7 @@ describe 'ChannelCollection', () ->
       return coll.get('a').should.be.rejectedWith(Error)
 
     it 'should get common channel b', () ->
-      return coll.get('b').should.become(channel_b)
+      return coll.get('b').should.eventually.be.equal(channel_b)
 
     it 'should reject local channel c', () ->
       return coll.get('c').should.be.rejectedWith(Error)

@@ -22,7 +22,7 @@ describe 'StreamCollection', () ->
       get: get
     }
 
-    run_permutations("resolve stream", get_actions (done) -> coll.get("stream").should.become(stream).notify(done))
+    run_permutations("resolve stream", get_actions (done) -> coll.get("stream").should.eventually.be.equal(stream).notify(done))
     run_permutations("reject other", get_actions (done) -> coll.get("other").should.be.rejectedWith(Error).notify(done))
 
 
@@ -36,10 +36,10 @@ describe 'StreamCollection', () ->
       coll.resolve(stream2)
 
     it 'should resolve existing stream a', () ->
-      return coll.get('a').should.become(stream)
+      return coll.get('a').should.eventually.be.equal(stream)
 
     it 'should resolve existing stream b', () ->
-      return coll.get('b').should.become(stream2)
+      return coll.get('b').should.eventually.be.equal(stream2)
 
     it 'should reject missing stream c', () ->
       return coll.get('c').should.be.rejectedWith(Error)
