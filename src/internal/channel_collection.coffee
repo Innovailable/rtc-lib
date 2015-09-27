@@ -3,9 +3,17 @@ Promise = require('../compat').compat.Promise
 
 # TODO: does not remove channels known before ...
 
+# Helper which handles DataChannel negotiation for RemotePeer
+#
+# @private
+#
 class exports.ChannelCollection
 
-  constructor: (@channels={}) ->
+  # Constructs a ChanenlCollection
+  #
+  constructor: () ->
+    @channels = {}
+
     @defers = {}
     @pending = {}
 
@@ -13,21 +21,37 @@ class exports.ChannelCollection
     @wait_p = @wait_d.promise
 
 
+  # Set the local channel description.
+  #
+  # Triggers _update() if remote description already exists.
+  #
+  # @param [Object] data Object describing each offered DataChannel
+  #
   setLocal: (data) ->
     @local = data
 
     if @remote?
-      @update()
+      @_update()
 
 
+  # Set the remote channel description.
+  # 
+  # Triggers _update() if local description already exists.
+  #
+  # @param [Object] data Object describing each offered DataChannel
+  #
   setRemote: (data) ->
     @remote = data
 
     if @local?
-      @update()
+      @_update()
 
 
-  update: () ->
+  # Matches remote and local descriptions and creates promises common DataChannels
+  #
+  # @private
+  #
+  _update: () ->
     # create channel promises
     # TODO: warn if config differs
 
@@ -35,6 +59,7 @@ class exports.ChannelCollection
       if @local[name]?
         if @channels[name]?
           # nothing to do
+          # should currently not happen
 
         else if @pending[name]?
           # use the pending channel
@@ -67,6 +92,10 @@ class exports.ChannelCollection
     @wait_d.resolve()
 
 
+  # Resolves promises waiting for the given DataChannel
+  #
+  # @param [DataChannel] channel The new channel
+  #
   resolve: (channel) ->
     label = channel.label()
 
@@ -77,6 +106,14 @@ class exports.ChannelCollection
       @pending[label] = channel
 
 
+  # Get a promise to a DataChannel.
+  #
+  # Will resolve if DataChannel was offered and gets initiated. Might reject after remote and local description are processed.
+  #
+  # @param [String] name The label of the channel to get
+  #
+  # @return [Promise] Promise for the DataChannel
+  #
   get: (name) ->
     @wait_p.then () =>
       if @channels[name]?

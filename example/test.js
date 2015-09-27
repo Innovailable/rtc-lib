@@ -4,11 +4,10 @@ $(function() {
 
     // create and display local video/audio
     var stream = room.local.addStream();
-    var ve = new rtc.MediaDomElement($('#self'), stream);
+    var ve = new rtc.MediaDomElement($('#self'), room.local);
     ve.mute();
 
-    // add a data channel
-
+    // add a data channel to all incoming peers
     room.local.addDataChannel();
 
     // create video for peers

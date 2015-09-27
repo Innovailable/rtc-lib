@@ -2,7 +2,7 @@ Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
 
-class PalavaSignalingPeer extends EventEmitter
+class exports.PalavaSignalingPeer extends EventEmitter
 
   constructor: (@channel, @id, @status, @first) ->
     @channel.on 'message', (data) =>
@@ -54,7 +54,7 @@ class exports.PalavaSignaling extends EventEmitter
             return
 
           for i, data of data.peers
-            peer = new PalavaSignalingPeer(@channel, data.peer_id, data.status, false)
+            peer = new exports.PalavaSignalingPeer(@channel, data.peer_id, data.status, false)
             @peers[data.peer_id] = peer
             @emit('peer_joined', peer)
 
@@ -65,7 +65,7 @@ class exports.PalavaSignaling extends EventEmitter
             # invalid ...
             return
 
-          peer = new PalavaSignalingPeer(@channel, data.peer_id, data.status, true)
+          peer = new exports.PalavaSignalingPeer(@channel, data.peer_id, data.status, true)
           @peers[data.peer] = peer
           @emit('peer_joined', peer)
 

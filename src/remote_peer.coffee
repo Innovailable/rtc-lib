@@ -1,5 +1,4 @@
-q = require('q')
-
+Promise = require('./compat').compat.Promise
 Peer = require('./peer').Peer
 
 StreamCollection = require('./internal/stream_collection').StreamCollection
@@ -52,18 +51,16 @@ class exports.RemotePeer extends Peer
     @signaling.on 'message', (data) =>
       @emit 'message', data
 
-    @signaling.on 'update_streams', (data) =>
-      stream_collection.update(data)
-
     @signaling.on 'closed', () =>
+      @peer_connection.close()
       @emit('closed')
 
     # pass on signals
 
     @peer_connection.on 'connected', () =>
-      @emit('connected')
 
     @peer_connection.on 'closed', () =>
+      # TODO
 
     # we probably want to connect now
 
@@ -72,6 +69,7 @@ class exports.RemotePeer extends Peer
 
 
   status: (key) ->
+    # TODO
     if key?
       return @status_obj[key]
     else
@@ -83,7 +81,7 @@ class exports.RemotePeer extends Peer
 
 
   connect: () ->
-    if not @connect_p
+    if not @connect_p?
       # wait for streams
 
       stream_promises = []
@@ -95,7 +93,7 @@ class exports.RemotePeer extends Peer
         stream_promises.push(promise)
 
       # TODO: really fail on failed streams?
-      @connect_p = q.all(stream_promises).then (streams) =>
+      @connect_p = Promise.all(stream_promises).then (streams) =>
         # add all streams
 
         for [name, stream] in streams

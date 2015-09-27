@@ -35,6 +35,7 @@ describe 'ChannelCollection', () ->
       coll.setLocal({a: 1, b: 1})
       coll.resolve(channel_a)
       coll.resolve(channel_b)
+      coll.resolve(channel_c)
 
     it 'should get existing channel a', () ->
       return coll.get('a').should.eventually.be.equal(channel_a)
@@ -42,8 +43,11 @@ describe 'ChannelCollection', () ->
     it 'should get existing channel b', () ->
       return coll.get('b').should.eventually.be.equal(channel_b)
 
-    it 'should reject missing channel c', () ->
+    it 'should reject unnegotiated channel c', () ->
       return coll.get('c').should.be.rejectedWith(Error)
+
+    it 'should reject unknown channel d', () ->
+      return coll.get('d').should.be.rejectedWith(Error)
 
 
   describe 'Adding different channels on remote and local', () ->

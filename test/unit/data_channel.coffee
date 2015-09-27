@@ -1,7 +1,5 @@
 {DataChannel} = require('../../src/data_channel')
 
-expect = require('chai').expect
-
 # receives all sent data
 class EchoChannel
 

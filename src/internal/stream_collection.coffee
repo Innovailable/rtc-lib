@@ -1,20 +1,32 @@
 Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
+# Helper handling the mapping of streams for RemotePeer
+#
+# @private
+#
 class exports.StreamCollection extends EventEmitter
 
-  constructor: (@streams={}) ->
-    @defers = {}
-    @waiting = {}
-    @pending = {}
+  
+  # Constructs a StreamCollection
+  #
+  # @property streams
+  #
+  constructor: () ->
+    @streams = {}
+
+    @_defers = {}
+    @_waiting = {}
+    @_pending = {}
 
     @wait_d = new Deferred()
     @wait_p = @wait_d.promise
 
 
+  # 
   update: (data) ->
     members = []
-    @waiting = {}
+    @_waiting = {}
 
     # remove old streams
 
@@ -27,6 +39,7 @@ class exports.StreamCollection extends EventEmitter
 
         # close/fail
 
+        # TODO: this does not work anymore ...
         if stream_p.isFullfilled()
           stream_p.then (stream) ->
             stream.close()
@@ -44,26 +57,26 @@ class exports.StreamCollection extends EventEmitter
         defer = new Deferred()
 
         @streams[name] = defer.promise
-        @defers[name] = defer
+        @_defers[name] = defer
 
         @emit('stream_added', name, defer.promise)
 
       # do we adjust stream initialization?
 
-      if @defers[name]?
-        if @pending[id]?
+      if @_defers[name]?
+        if @_pending[id]?
           # got it!
 
-          stream = @pending[id]
-          delete @pending[id]
+          stream = @_pending[id]
+          delete @_pending[id]
 
-          @defers[name].resolve(stream)
-          delete @defers[name]
+          @_defers[name].resolve(stream)
+          delete @_defers[name]
 
         else
           # add waiting mapping
 
-          @waiting[id] = name
+          @_waiting[id] = name
 
     @wait_d.resolve()
 
@@ -71,19 +84,19 @@ class exports.StreamCollection extends EventEmitter
   resolve: (stream) ->
     id = stream.id()
 
-    if @waiting[id]?
+    if @_waiting[id]?
       # stream is expected
 
-      name = @waiting[id]
-      delete @waiting[id]
+      name = @_waiting[id]
+      delete @_waiting[id]
 
-      @defers[name].resolve(stream)
-      delete @defers[name]
+      @_defers[name].resolve(stream)
+      delete @_defers[name]
 
     else
       # lets hope someone wants this later ...
 
-      @pending[id] = stream
+      @_pending[id] = stream
 
 
   get: (name) ->

@@ -8,12 +8,13 @@ exports.media = media = {}
 next_id = 0
 
 media.createStream = (obj={audio: true, video: true}) ->
+  # TODO: move from Deferred() to Promise()
   stream_d = new Deferred()
 
   if obj instanceof compat.MediaStream
-    # an actual stream
+    # an actual native stream
     stream_d.resolve(new Stream(obj))
-  else if typeof obj == 'function'
+  else if obj?.then?
     # promise for a stream
     obj.then (native_stream) ->
       stream_d.resolve(new Stream(native_stream))

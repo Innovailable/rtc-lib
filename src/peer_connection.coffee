@@ -39,7 +39,7 @@ class exports.PeerConnection extends EventEmitter
 
     @pc.oniceconnectionstatechange = () =>
       if @pc.iceConnectionState in ['failed', 'closed']
-        connectionError(new Error("Unable to establish ICE connection"))
+        @_connectError(new Error("Unable to establish ICE connection"))
       else if @pc.iceConnectionState in ['connected', 'completed']
         @connect_d.resolve()
 

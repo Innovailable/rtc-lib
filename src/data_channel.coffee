@@ -2,8 +2,15 @@ Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
 
+# A wrapper for RTCDataChannel
+#
 class exports.DataChannel extends EventEmitter
 
+  # Construct a new DataChannel
+  #
+  # @param [RTCDataChannel] channel The wrapped native data channel
+  # @param [Number] max_buffer The size of the send buffer after which we will delay sending
+  #
   constructor: (@channel, @max_buffer=1024*10) ->
     @_connected = false
     @_connect_queue = []
@@ -27,6 +34,10 @@ class exports.DataChannel extends EventEmitter
       @emit('error', err)
 
 
+  # Connect to the DataChannel. You will receive messages and will be able to send after calling this.
+  #
+  # @return [Promise] Promise which resolves as soon as the DataChannel is open
+  #
   connect: () ->
     @_connected = true
 
@@ -38,10 +49,17 @@ class exports.DataChannel extends EventEmitter
     return Promise.resolve()
 
 
+  # The label of the DataChannel used to distinguish multiple channels
+  #
+  # @return [String] The label
   label: () ->
     return @channel.label
 
 
+  # Send data to the peer through the DataChannel
+  #
+  # @return [Promise] Promise which will be resolved when the data was passed to the native data channel
+  #
   send: (data) ->
     if not @_connected
       @connect()
@@ -56,6 +74,8 @@ class exports.DataChannel extends EventEmitter
     return defer.promise
 
 
+  # Method which actually sends the data. Implements buffering
+  #
   _actualSend: () ->
     if @channel.readyState == 'open'
       # actual sending

@@ -8,7 +8,9 @@
     "url": "https://github.com/innovailable/innovailable/rtc-lib.git"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive"
+    "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive",
+    "doc": "./node_modules/.bin/codo src -p true -o doc",
+    "doc-private": "./node_modules/.bin/codo -p false -o ./doc-private src"
   },
   "version": "0.0.1",
   "dependencies": {
@@ -22,6 +24,7 @@
   "devDependencies": {
     "chai": "^3.3.0",
     "chai-as-promised": "^5.1.0",
+    "codo": "^2.0.11",
     "coffee-script": "^1.10.0",
     "js-combinatorics": "^0.5.0",
     "mocha": "^2.3.3",
