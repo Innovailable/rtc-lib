@@ -1,18 +1,26 @@
 Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
+###*
 # Helper handling the mapping of streams for RemotePeer
+# @class rtc.internal.StreamCollection
 #
-# @private
-#
+# @constructor
+###
 class exports.StreamCollection extends EventEmitter
 
-  
-  # Constructs a StreamCollection
-  #
-  # @property streams
-  #
+  ###*
+  # A new stream was added to the collection
+  # @event steam_added
+  # @param {String} name The user defined name of the stream
+  # @param {Promise -> rtc.Stream} stream Promise to the stream
+  ###
+
   constructor: () ->
+    ###*
+    # Contains the promises which will resolve to the streams
+    # @property {Object} streams
+    ###
     @streams = {}
 
     @_defers = {}
@@ -23,7 +31,11 @@ class exports.StreamCollection extends EventEmitter
     @wait_p = @wait_d.promise
 
 
-  # 
+  ###*
+  # Set stream description and generate promises
+  # @method update
+  # @param data {Object} An object mapping the stream ids to stream names
+  ###
   update: (data) ->
     members = []
     @_waiting = {}
@@ -81,6 +93,11 @@ class exports.StreamCollection extends EventEmitter
     @wait_d.resolve()
 
 
+  ###*
+  # Add stream to the collection and resolve promises waiting for it
+  # @method resolve
+  # @param {rtc.Stream} stream
+  ###
   resolve: (stream) ->
     id = stream.id()
 
@@ -99,6 +116,13 @@ class exports.StreamCollection extends EventEmitter
       @_pending[id] = stream
 
 
+  ###*
+  # Gets a promise for a stream with the given name. Might be rejected after `update()`
+  #
+  # @method get
+  # @param {String} name
+  # @return {Promise} The promise for the `rtc.Stream`
+  ###
   get: (name) ->
     @wait_p.then () =>
       if @streams[name]?

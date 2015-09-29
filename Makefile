@@ -27,6 +27,12 @@ watch:
 clean:
 	rm -r out
 
+doc:
+	./node_modules/.bin/yuidoc --syntaxtype coffee -e .coffee -o doc src
+
+test:
+	npm test
+
 $(BUNDLE): $(SOURCES) Makefile
 	@mkdir -p $(OUT_DIR)
 	node_modules/.bin/browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d --no-bundle-external $(MAIN_SRC) -o $@
@@ -39,5 +45,5 @@ $(DEP_BUNDLE): $(SOURCES) Makefile
 	node_modules/.bin/uglifyjs --compress --mangle -o $@ -- $<
 
 
-.PHONY: all compile min clean
+.PHONY: all compile min clean doc test
 

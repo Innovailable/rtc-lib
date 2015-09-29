@@ -4,8 +4,9 @@ Stream = require('./stream').Stream
 
 class exports.LocalPeer extends Peer
 
+  @streams: {}
+
   constructor: (@status_obj={}) ->
-    @streams = {}
     @channels = {}
 
 

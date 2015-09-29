@@ -1,6 +1,5 @@
 *.sw?
 out
 doc
-doc-private
 npm-debug.log
 node_modules

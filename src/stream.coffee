@@ -1,16 +1,40 @@
+###*
+# A wrapper around an HTML5 MediaStream
+# @class rtc.Stream
+#
+# @constructor
+# @param {RTCDataStream} stream The native stream
+###
 class exports.Stream
 
   constructor: (@stream) ->
 
 
+  ###*
+  # Get the id of the stream. This is neither user defined nor human readable.
+  # @method id
+  # @return {String} The id of the underlying stream
+  ###
   id: () ->
     return @stream.id
 
 
+  ###*
+  # Checks whether the stream has any tracks of the given type
+  # @method hasTracks
+  # @param {'audio' | 'video' | 'both'} [type='both'] The type of track to check for
+  # @return {Number} The amount of tracks of the given type
+  ###
   hasTracks: (type) ->
-    return @getTracks(type).length > 0
+    return @getTracks(type).length
 
 
+  ###*
+  # Gets the tracks of the given type
+  # @method getTracks
+  # @param {'audio' | 'video' | 'both'} [type='both'] The type of tracks to get
+  # @return {Array} An Array of the tracks
+  ###
   getTracks: (type) ->
     type = type.toLowerCase()
 
@@ -29,6 +53,13 @@ class exports.Stream
       throw new Error("Invalid stream part '" + type + "'")
 
 
+  ###*
+  # Mutes or unmutes tracks of the stream
+  # @method mute
+  # @param {Boolean} [muted=true] Mute on `true` and unmute on `false`
+  # @param {'audio' | 'video' | 'both'} [type='audio'] The type of tracks to mute or unmute
+  # @return {Boolean} Whether the tracks were muted or unmuted
+  ###
   mute: (muted=true, type='audio') ->
     for track in getTracks(type)
       track.enabled = not muted
@@ -36,6 +67,12 @@ class exports.Stream
     return muted
 
 
+  ###*
+  # Toggles the mute state of tracks of the stream
+  # @method toggleMute
+  # @param {'audio' | 'video' | 'both'} [type='audio'] The type of tracks to mute or unmute
+  # @return {Boolean} Whether the tracks were muted or unmuted
+  ###
   toggleMute: (type='audio') ->
     tracks = getTracks(type)
 
@@ -47,5 +84,9 @@ class exports.Stream
     return muted
 
 
+  ###*
+  # Stops the stream
+  # @method stop
+  ###
   stop: () ->
     stream.stop()

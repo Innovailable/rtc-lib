@@ -1,16 +1,27 @@
 Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
-
-# A wrapper for RTCDataChannel
+###*
+# A wrapper for RTCDataChannel. Used to transfer custom data between peers.
+# @class rtc.DataChannel
 #
+# @constructor
+# @param {RTCDataChannel} channel The wrapped native data channel
+# @param {Number} [max_buffer] The size of the send buffer after which we will delay sending
+###
 class exports.DataChannel extends EventEmitter
 
-  # Construct a new DataChannel
-  #
-  # @param [RTCDataChannel] channel The wrapped native data channel
-  # @param [Number] max_buffer The size of the send buffer after which we will delay sending
-  #
+  ###*
+  # A new messages was received. Triggers only after `connect()` was called
+  # @event message
+  # @param data The data received
+  ###
+
+  ###*
+  # The channel was closed
+  # @event closed
+  ###
+
   constructor: (@channel, @max_buffer=1024*10) ->
     @_connected = false
     @_connect_queue = []
@@ -28,16 +39,18 @@ class exports.DataChannel extends EventEmitter
         @emit('message', event.data)
 
     @channel.onclose = () =>
-      @emit('close')
+      @emit('closed')
 
+    # TODO: what to do with this?
     @channel.onerror = (err) =>
       @emit('error', err)
 
 
+  ###*
   # Connect to the DataChannel. You will receive messages and will be able to send after calling this.
-  #
-  # @return [Promise] Promise which resolves as soon as the DataChannel is open
-  #
+  # @method connect
+  # @return {Promise} Promise which resolves as soon as the DataChannel is open
+  ###
   connect: () ->
     @_connected = true
 
@@ -49,17 +62,21 @@ class exports.DataChannel extends EventEmitter
     return Promise.resolve()
 
 
+  ###*
   # The label of the DataChannel used to distinguish multiple channels
-  #
-  # @return [String] The label
+  # @method label
+  # @return {String} The label
+  ###
   label: () ->
     return @channel.label
 
 
+  ###*
   # Send data to the peer through the DataChannel
-  #
-  # @return [Promise] Promise which will be resolved when the data was passed to the native data channel
-  #
+  # @method send
+  # @param data The data to be transferred
+  # @return {Promise} Promise which will be resolved when the data was passed to the native data channel
+  ####
   send: (data) ->
     if not @_connected
       @connect()
@@ -74,8 +91,11 @@ class exports.DataChannel extends EventEmitter
     return defer.promise
 
 
+  ###*
   # Method which actually sends the data. Implements buffering
-  #
+  # @method _actualSend
+  # @private
+  ###
   _actualSend: () ->
     if @channel.readyState == 'open'
       # actual sending

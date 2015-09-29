@@ -1,16 +1,12 @@
 Deferred = require('es6-deferred')
 Promise = require('../compat').compat.Promise
 
-# TODO: does not remove channels known before ...
-
+###*
 # Helper which handles DataChannel negotiation for RemotePeer
-#
-# @private
-#
+# @class rtc.internal.ChannelCollection
+###
 class exports.ChannelCollection
 
-  # Constructs a ChanenlCollection
-  #
   constructor: () ->
     @channels = {}
 
@@ -21,12 +17,11 @@ class exports.ChannelCollection
     @wait_p = @wait_d.promise
 
 
+  ###*
   # Set the local channel description.
-  #
-  # Triggers _update() if remote description already exists.
-  #
-  # @param [Object] data Object describing each offered DataChannel
-  #
+  # @method setLocal
+  # @param {Object} data Object describing each offered DataChannel
+  ###
   setLocal: (data) ->
     @local = data
 
@@ -34,12 +29,11 @@ class exports.ChannelCollection
       @_update()
 
 
+  ###*
   # Set the remote channel description.
-  # 
-  # Triggers _update() if local description already exists.
-  #
-  # @param [Object] data Object describing each offered DataChannel
-  #
+  # @method setRemote
+  # @param {Object} data Object describing each offered DataChannel
+  ###
   setRemote: (data) ->
     @remote = data
 
@@ -47,10 +41,11 @@ class exports.ChannelCollection
       @_update()
 
 
+  ###*
   # Matches remote and local descriptions and creates promises common DataChannels
-  #
+  # @method _update
   # @private
-  #
+  ###
   _update: () ->
     # create channel promises
     # TODO: warn if config differs
@@ -92,10 +87,11 @@ class exports.ChannelCollection
     @wait_d.resolve()
 
 
+  ###*
   # Resolves promises waiting for the given DataChannel
-  #
-  # @param [DataChannel] channel The new channel
-  #
+  # @method resolve
+  # @param {DataChannel} channel The new channel
+  ###
   resolve: (channel) ->
     label = channel.label()
 
@@ -106,14 +102,12 @@ class exports.ChannelCollection
       @pending[label] = channel
 
 
-  # Get a promise to a DataChannel.
-  #
-  # Will resolve if DataChannel was offered and gets initiated. Might reject after remote and local description are processed.
-  #
-  # @param [String] name The label of the channel to get
-  #
-  # @return [Promise] Promise for the DataChannel
-  #
+  ###*
+  # Get a promise to a DataChannel. Will resolve if DataChannel was offered and gets initiated. Might reject after remote and local description are processed.
+  # @method get
+  # @param {String} name The label of the channel to get
+  # @return {Promise -> DataChannel} Promise for the DataChannel
+  ###
   get: (name) ->
     @wait_p.then () =>
       if @channels[name]?
