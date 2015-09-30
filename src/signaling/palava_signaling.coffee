@@ -11,7 +11,7 @@ EventEmitter = require('events').EventEmitter
 class exports.PalavaSignalingPeer extends EventEmitter
 
   constructor: (@channel, @id, @status, @first) ->
-    @channel.on 'message', (data) =>
+    recv_msg = (data) =>
       if data.sender_id != @id
         # message is not for us
         return
@@ -22,11 +22,14 @@ class exports.PalavaSignalingPeer extends EventEmitter
 
       @emit(data.event, data.data)
 
+    @channel.on('message', recv_msg)
+
     @on 'peer_updated_status', (status) =>
       @emit('new_status', status)
 
     @on 'peer_left', () =>
       @emit('closed')
+      @channel.removeListener('message', recv_msg)
 
 
   send: (event, data={}) ->

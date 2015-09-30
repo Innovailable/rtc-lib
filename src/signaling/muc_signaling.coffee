@@ -12,7 +12,7 @@ EventEmitter = require('events').EventEmitter
 class exports.MucSignalingPeer extends EventEmitter
 
   constructor: (@channel, @peer_id, @status, @first) ->
-    @channel.on 'message', (data) =>
+    recv_msg = (data) =>
       if data.peer != @peer_id
         # message is not for us
         return
@@ -31,10 +31,13 @@ class exports.MucSignalingPeer extends EventEmitter
 
         when 'peer_left'
           @emit('left')
+          @channel.removeListener('message', recv_msg)
 
         when 'peer_status'
           @status = data.status
           @emit('new_status', @status)
+
+    @channel.on('message', recv_msg)
 
 
   send: (event, data={}) ->
