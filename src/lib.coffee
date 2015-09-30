@@ -1,15 +1,20 @@
-extend = (obj) ->
+extend = (root, obj) ->
   for key, value of obj
-    exports[key] = value
+    root[key] = value
 
   return exports
 
-extend(require('./peer'))
-extend(require('./remote_peer'))
-extend(require('./local_peer'))
-extend(require('./peer_connection'))
-extend(require('./stream'))
-extend(require('./compat'))
-extend(require('./room'))
-extend(require('./media'))
-extend(require('./video_element'))
+module.exports = exports = {
+  internal: {}
+  signaling: {}
+}
+
+extend(exports, require('./peer'))
+extend(exports, require('./remote_peer'))
+extend(exports, require('./local_peer'))
+extend(exports, require('./peer_connection'))
+extend(exports, require('./stream'))
+extend(exports, require('./compat'))
+extend(exports, require('./room'))
+extend(exports, require('./media'))
+extend(exports, require('./video_element'))
