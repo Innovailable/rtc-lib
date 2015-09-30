@@ -41,8 +41,10 @@ class exports.PeerConnection extends EventEmitter
     # PeerConnection states
 
     @pc.oniceconnectionstatechange = () =>
-      if @pc.iceConnectionState in ['failed', 'closed']
+      if @pc.iceConnectionState == 'failed'
         @_connectError(new Error("Unable to establish ICE connection"))
+      else if @pc.iceConnectionState == 'closed'
+        @connect_d.reject(new Error('Connection was closed'))
       else if @pc.iceConnectionState in ['connected', 'completed']
         @connect_d.resolve()
 
@@ -62,7 +64,7 @@ class exports.PeerConnection extends EventEmitter
 
   addIceCandidate: (desc) ->
     if desc.candidate?
-      candidate = new rtc.compat.IceCandidate(desc)
+      candidate = new compat.IceCandidate(desc)
       @pc.addIceCandidate(candidate)
     else
       # TODO: end of ice trickling ... do something?

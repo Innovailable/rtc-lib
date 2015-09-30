@@ -1,7 +1,7 @@
 EventEmitter = require('events').EventEmitter
 
-WebSocketChannel = require('./signaling/web_socket_channel.coffee').WebSocketChannel
-PalavaSignaling = require('./signaling/palava_signaling.coffee').PalavaSignaling
+{WebSocketChannel} = require('./signaling/web_socket_channel.coffee')
+{MucSignaling} = require('./signaling/muc_signaling.coffee')
 
 RemotePeer = require('./remote_peer.coffee').RemotePeer
 LocalPeer = require('./local_peer.coffee').LocalPeer
@@ -33,11 +33,11 @@ class exports.Room extends EventEmitter
   # @event closed
   ###
 
-  constructor: (@name, @signaling, @options={}) ->
+  constructor: (@signaling, @options={}) ->
     # turn signaling into acctual signaling if needed
     if typeof @signaling == 'string' or @signaling instanceof String
       channel = new WebSocketChannel(@signaling)
-      @signaling = new PalavaSignaling(channel)
+      @signaling = new MucSignaling(channel)
 
     @local = @options.local || new LocalPeer()
 
@@ -59,9 +59,9 @@ class exports.Room extends EventEmitter
   # @method join
   # @return {Promise} A promise which will be resolved once the room was joined
   ###
-  join: () ->
+  connect: () ->
     if not @join_p?
-      @join_p = @signaling.join(@name, @local.status())
+      @join_p = @signaling.connect()
 
     return @join_p
 

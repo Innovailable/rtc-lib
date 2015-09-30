@@ -3,6 +3,8 @@ EventEmitter = require('events').EventEmitter
 
 
 ###*
+# Signaling peer compatible with the framing of palava signaling
+#
 # @module rtc.signaling
 # @class rtc.signaling.PalavaSignalingPeer
 ###
@@ -21,7 +23,7 @@ class exports.PalavaSignalingPeer extends EventEmitter
       @emit(data.event, data.data)
 
     @on 'peer_updated_status', (status) =>
-      @emit('update_status', status)
+      @emit('new_status', status)
 
     @on 'peer_left', () =>
       @emit('closed')
@@ -37,14 +39,23 @@ class exports.PalavaSignalingPeer extends EventEmitter
     })
 
 
+###*
+# Signaling implementation compatible with the framing of palava signaling
+#
+# @module rtc.signaling
+# @class rtc.signaling.PalavaSignaling
+###
 class exports.PalavaSignaling extends EventEmitter
 
-  constructor: (@channel) ->
+  constructor: (@channel, @room, @status) ->
     @peers = {}
     @joined = false
 
     join_d = new Deferred()
     @join_p = join_d.promise
+
+    @channel.on 'closed', () =>
+      @emit('closed')
 
     @channel.on 'message', (data) =>
       if not data.event?
@@ -74,19 +85,16 @@ class exports.PalavaSignaling extends EventEmitter
           @emit('peer_joined', peer)
 
 
-  join: (room, status) ->
-    if @joined
-      return Q.reject(new Error("Joined already"))
+  connect: () ->
+    if not @connect_p?
+      @connect_p = @channel.connect().then () =>
+        return @channel.send({
+          event: 'join_room'
+          room_id: room
+          status: status
+        })
 
-    @joined = true
-
-    @channel.connect().then () =>
-      return @channel.send({
-        event: 'join_room'
-        room_id: room
-        status: status
-      }).then () =>
-        return @join_p
+    return @connect_p
 
 
   set_status: (status) ->

@@ -1,6 +1,6 @@
 $(function() {
     // create a room
-    var room = new rtc.Room("12345test", 'ws://ladon.local:8080');
+    var room = new rtc.Room('ws://ladon.local:8080');
 
     // create and display local video/audio
     var stream = room.local.addStream();
@@ -17,18 +17,19 @@ $(function() {
         var ve = new rtc.MediaDomElement(view, peer);
         ve.mute();
 
+        console.log('peer joined!');
+
         peer.on('left', function() {
             view.remove();
         });
 
         peer.channel().then(function(channel) {
             console.log("got the channel!");
-            console.log(channel);
         }).catch(function(err) {
             console.log(err);
         });
     });
 
     // join the room
-    room.join();
+    room.connect().then(function() { console.log('connected!'); });
 });

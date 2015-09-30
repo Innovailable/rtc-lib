@@ -13,7 +13,7 @@ ChannelCollection = require('./internal/channel_collection').ChannelCollection
 #
 # @constructor
 # @param {rtc.PeerConnection} peer_connection The underlying peer connection
-# @param {rtc.Signaling} signaling The signaling connection to the peer
+# @param {rtc.SignalingPeer} signaling The signaling connection to the peer
 # @param {rtc.LocalPeer} local The local peer
 # @param {Object} options The options object as passed to `Room`
 ###
@@ -51,7 +51,7 @@ class exports.RemotePeer extends Peer
     @streams = @stream_collection.streams
     @streams_desc = {}
 
-    @stream_collection.on 'stream_added', (name, stream) ->
+    @stream_collection.on 'stream_added', (name, stream) =>
       @emit('stream_added', name, stream)
 
     # channels stuff
@@ -60,7 +60,7 @@ class exports.RemotePeer extends Peer
     @channels = @channel_collection.channels
     @channels_desc = {}
 
-    @channel_collection.on 'data_channel_added', (name, channel) ->
+    @channel_collection.on 'data_channel_added', (name, channel) =>
       @emit('data_channel_added', name, channel)
 
     # resolve streams and data channels
@@ -99,7 +99,7 @@ class exports.RemotePeer extends Peer
     @signaling.on 'message', (data) =>
       @emit('message', data)
 
-    @signaling.on 'closed', () =>
+    @signaling.on 'left', () =>
       @peer_connection.close()
       @emit('left')
 

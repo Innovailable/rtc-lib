@@ -53,7 +53,7 @@ class exports.LocalPeer extends Peer
   # Add data channel which will be negotiated with all remote peers
   # @method addDataChannel
   # @param {String} [name='data'] Name of the data channel
-  # @param {Object} [desc] desc Options passed to `RTCDataChannel.createDataChannel()`
+  # @param {Object} [desc] Options passed to `RTCDataChannel.createDataChannel()`
   ###
   addDataChannel: (name, desc) ->
     if typeof name != 'string'

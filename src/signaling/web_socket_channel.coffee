@@ -37,7 +37,7 @@ class exports.WebSocketChannel extends EventEmitter
           @emit('message', data)
 
         socket.onclose = () =>
-          @emit 'close'
+          @emit 'closed'
 
     return @connect_p
 
