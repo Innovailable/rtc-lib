@@ -1,6 +1,5 @@
-Deferred = require('es6-deferred')
+{Promise} = require('../internal/promise')
 EventEmitter = require('events').EventEmitter
-Promise = require('../compat').compat.Promise
 
 
 class exports.WebSocketChannel extends EventEmitter

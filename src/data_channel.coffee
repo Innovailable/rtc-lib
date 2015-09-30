@@ -1,4 +1,4 @@
-Deferred = require('es6-deferred')
+{Deferred,Promise} = require('./internal/promise')
 EventEmitter = require('events').EventEmitter
 
 ###*

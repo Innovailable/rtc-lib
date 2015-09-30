@@ -10,7 +10,7 @@ exports.compat = compat = {
   SessionDescription: window.mozRTCSessionDescription || window.RTCSessionDescription
   MediaStream: window.MediaStream || window.mozMediaStream || window.webkitMediaStream
   getUserMedia: bindHelper(navigator, navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia)
-  Promise: Promise || require('es6-promise').Promise
+  Promise: window.Promise || require('es6-promise').Promise
 
   supported: () ->
     return compat.PeerConnection? and compat.IceCandidate? and compat.SessionDescription? and compat.getUserMedia?

@@ -1,5 +1,4 @@
-Deferred = require('es6-deferred')
-Promise = require('../compat').compat.Promise
+{Deferred,Promise} = require('./promise')
 
 ###*
 # Helper which handles DataChannel negotiation for RemotePeer

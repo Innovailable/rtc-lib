@@ -1,4 +1,4 @@
-Deferred = require('es6-deferred')
+{Deferred} = require('./internal/promise')
 
 compat = require('./compat').compat
 Stream = require('./stream').Stream
