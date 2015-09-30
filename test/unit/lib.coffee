@@ -10,5 +10,4 @@ describe 'rtc-lib', () ->
 
     rtc.should.have.property('MediaDomElement')
 
-    rtc.should.have.property('media')
     rtc.should.have.property('compat')

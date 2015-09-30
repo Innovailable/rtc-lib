@@ -5,7 +5,43 @@ StreamCollection = require('./internal/stream_collection').StreamCollection
 ChannelCollection = require('./internal/channel_collection').ChannelCollection
 
 
+###*
+# Represents a remote user of the room
+# @class rtc.RemotePeer
+# @extends rtc.Peer
+#
+# @constructor
+# @param {rtc.PeerConnection} peer_connection The underlying peer connection
+# @param {rtc.Signaling} signaling The signaling connection to the peer
+# @param {rtc.LocalPeer} local The local peer
+# @param {Object} options The options object as passed to `Room`
+###
 class exports.RemotePeer extends Peer
+
+  ###*
+  # Message received from peer through signaling
+  # @event message
+  # @param data The payload of the message
+  ###
+
+  ###*
+  # The remote peer left or signaling closed
+  # @event left
+  ###
+
+  ###*
+  # A new stream is available from the peer
+  # @event stream_added
+  # @param {String} name Name of the stream
+  # @param {Promise -> rtc.Stream} stream Promise of the stream
+  ###
+
+  ###*
+  # A new data channel is available from the peer
+  # @event data_channel_added
+  # @param {String} name Name of the channel
+  # @param {Promise -> rtc.Stream} stream Promise of the channel
+  ###
 
   constructor: (@peer_connection, @signaling, @local, @options) ->
     # create streams
@@ -14,11 +50,17 @@ class exports.RemotePeer extends Peer
     @streams = @stream_collection.streams
     @streams_desc = {}
 
+    @stream_collection.on 'stream_added', (name, stream) ->
+      @emit('stream_added', name, stream)
+
     # channels stuff
 
     @channel_collection = new ChannelCollection()
     @channels = @channel_collection.channels
     @channels_desc = {}
+
+    @channel_collection.on 'data_channel_added', (name, channel) ->
+      @emit('data_channel_added', name, channel)
 
     # resolve streams and data channels
 
@@ -46,14 +88,19 @@ class exports.RemotePeer extends Peer
     @signaling.on 'ice_candidate', (candidate) =>
       @peer_connection.addIceCandidate(candidate)
 
+    # status handling
+ 
+    @signaling.on 'status_changed', (key, value) =>
+      @emit('status_changed', key, value)
+
     # communication
 
     @signaling.on 'message', (data) =>
-      @emit 'message', data
+      @emit('message', data)
 
     @signaling.on 'closed', () =>
       @peer_connection.close()
-      @emit('closed')
+      @emit('left')
 
     # pass on signals
 
@@ -68,18 +115,26 @@ class exports.RemotePeer extends Peer
       @connect()
 
 
+  # documented in Peer
   status: (key) ->
-    # TODO
-    if key?
-      return @status_obj[key]
-    else
-      return @status_obj
+    @signaling.status[key]
 
 
+  ###*
+  # Send a message to the peer through signaling
+  # @method message
+  # @param data The payload
+  # @return {Promise} Promise which is resolved when the data was sent
+  ###
   message: (data) ->
     return @signaling.send('message', data)
 
 
+  ###*
+  # Connect to the remote peer to exchange streams and create data channels
+  # @method connect
+  # @return {Promise} Promise which will resolved when the connection is established
+  ###
   connect: () ->
     if not @connect_p?
       # wait for streams
@@ -115,13 +170,30 @@ class exports.RemotePeer extends Peer
     return @connect_p
 
 
+  ###*
+  # Closes the connection to the peer
+  # @method close
+  ###
   close: () ->
-    return @peer_connection.close()
+    @peer_connection.close()
+    return
 
 
+  ###*
+  # Get a stream from the peer. Has to be sent by the remote peer to succeed.
+  # @method stream
+  # @param {String} [name='stream'] Name of the stream
+  # @return {Promise -> rtc.Stream} Promise of the stream
+  ###
   stream: (name=@DEFAULT_STREAM) ->
     @stream_collection.get(name)
 
 
+  ###*
+  # Get a data channel to the remote peer. Has to be added by local and remote side to succeed.
+  # @method channel
+  # @param {String} [name='data'] Name of the data channel
+  # @return {Promise -> rtc.DataChannel} Promise of the data channel
+  ###
   channel: (name=@DEFAULT_CHANNEL) ->
     @channel_collection.get(name)

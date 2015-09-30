@@ -15,6 +15,9 @@ PeerConnection = require('./peer_connection.coffee').PeerConnection
 # @param {String} name The name of the room. Will be passed on to signaling
 # @param {rtc.Signaling | String} signaling The signaling to be used. If you pass a string it will be interpreted as a websocket address and a palava signaling connection will be established with it.
 # @param {Object} [options] Various options to be used in connections created by this room
+# @param {Boolean} [options.auto_connect=true] Whether remote peers are connected automatically or an explicit `RemotePeer.connect()` call is needed
+# @param {String} [options.stun] The URI of the STUN server to use
+# @param {rtc.LocalPeer} [options.local] The local user
 ###
 class exports.Room extends EventEmitter
 
@@ -53,7 +56,7 @@ class exports.Room extends EventEmitter
   ###*
   # Joins the room. Initiates connection to signaling server if not done before.
   # @method join
-  # @retorn {Promise} A promise which will be resolved once the room was joined
+  # @return {Promise} A promise which will be resolved once the room was joined
   ###
   join: () ->
     if not @join_p?

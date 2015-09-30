@@ -17,7 +17,7 @@ $(function() {
         var ve = new rtc.MediaDomElement(view, peer);
         ve.mute();
 
-        peer.on('closed', function() {
+        peer.on('left', function() {
             view.remove();
         });
 

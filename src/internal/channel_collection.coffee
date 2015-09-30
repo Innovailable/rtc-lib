@@ -6,6 +6,13 @@
 ###
 class exports.ChannelCollection
 
+  ###*
+  # A new data channel is available
+  # @event data_channel_added
+  # @param {String} name Name of the channel
+  # @param {Promise -> rtc.Stream} stream Promise of the channel
+  ###
+
   constructor: () ->
     @channels = {}
 
@@ -63,6 +70,8 @@ class exports.ChannelCollection
 
           @channels[name] = Promise.resolve(channel)
 
+          @emit('data_channel_added', name, @channels[name])
+
         else
           # create a defer for the channel
 
@@ -70,6 +79,8 @@ class exports.ChannelCollection
 
           @channels[name] = defer.promise
           @defers[name] = defer
+
+          @emit('data_channel_added', name, @channels[name])
 
       else
         # TODO: better warning

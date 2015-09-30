@@ -90,3 +90,23 @@ class exports.Stream
   ###
   stop: () ->
     stream.stop()
+
+
+  ###*
+  # Creates a stream using `getUserMedia()`
+  # @method createStream
+  # @static
+  # @param {Object} [config={audio: true, video: true}] The configuration to pass to `getUserMedia()`
+  # @return {Promise -> rtc.Stream} Promise to the stream
+  #
+  # @example
+  #     var stream = rtc.Stream.createStream({audio: true, video: false});
+  #     rtc.MediaDomElement($('video'), stream);
+  ###
+  @createStream: (config={audio: true, video: true}) ->
+    return new Promise (resolve, reject) ->
+      # description to pass to getUserMedia()
+      success = (native_stream) ->
+        resolve(new Stream(native_stream))
+
+      compat.getUserMedia(config, success, reject)

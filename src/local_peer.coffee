@@ -1,36 +1,54 @@
 Peer = require('./peer').Peer
 Stream = require('./stream').Stream
 
-
+###*
+# Represents the local user of the room
+# @class rtc.LocalPeer
+# @extends rtc.Peer
+#
+# @constructor
+###
 class exports.LocalPeer extends Peer
 
-  @streams: {}
-
-  constructor: (@status_obj={}) ->
+  constructor: () ->
+    @streams = {}
     @channels = {}
+    @_status = {}
 
 
+  ###*
+  # Get an item of the status transferred to all remote peers
+  # @method status
+  # @param {String} key The key of the value. Will return
+  ###
+  ###*
+  # Set an item of the status transferred to all remote peers
+  # @method status
+  # @param {String} key The key of the value. Will return
+  # @param value The value to store
+  ###
   status: (key, value) ->
-    if key? and value?
-      @status_obj[key] = value
-      @emit 'status_changed', @status_obj
+    if value?
+      @_status[key] = value
+      @emit 'status_changed', @_status
       return
-    else if key?
-      return @status_obj[key]
     else
-      return @status_obj
+      return @_status[key]
 
 
-  dataChannel: (name=@DEFAULT_CHANNEL) ->
-    return @channels[name]
-
-
+  ###*
+  # Add data channel which will be negotiated with all remote peers
+  # @method addDataChannel
+  # @param {String} [name='data'] Name of the data channel
+  # @param {Object} [desc] desc Options passed to `RTCDataChannel.createDataChannel()`
+  ###
   addDataChannel: (name, desc) ->
     if typeof name != 'string'
       desc = name
       name = @DEFAULT_CHANNEL
 
     if not desc?
+      # TODO: default handling
       desc = {
         ordered: true
       }
@@ -40,12 +58,12 @@ class exports.LocalPeer extends Peer
     return
 
 
-  removeDataChannel: (name) ->
-    delete @channels[name]
-    @emit 'configuration_changed'
-    return
-
-
+  ###*
+  # Add local stream to be sent to all remote peers
+  # @method addStream
+  # @param {String} [name='stream'] Name of the stream
+  # @param {Promise -> rtc.Stream | rtc.Stream | Object} stream The stream, a promise to the stream or the configuration to create a stream with `rtc.Stream.createStream()`
+  ###
   addStream: (name, obj) ->
     # helper to actually save stream
     saveStream = (stream_p) =>
@@ -67,15 +85,14 @@ class exports.LocalPeer extends Peer
       return saveStream(Promise.resolve(obj))
     else
       # we assume we can pass it on to create a stream
-      stream_p = rtc.media.createStream(obj)
+      stream_p = Stream.createStream(obj)
       return saveStream(stream_p)
 
 
-  removeStream: (name) ->
-    delete @streams[name]
-    @emit 'configuration_changed'
-    return
-
-
+  ###*
+  # Get local stream
+  # @method stream
+  # @param {String} [name='stream'] Name of the stream
+  ###
   stream: (name=@DEFAULT_STREAM) ->
     return @streams[name]
