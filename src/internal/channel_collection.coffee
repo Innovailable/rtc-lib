@@ -1,10 +1,11 @@
 {Deferred,Promise} = require('./promise')
+{EventEmitter} = require('events')
 
 ###*
 # Helper which handles DataChannel negotiation for RemotePeer
 # @class rtc.internal.ChannelCollection
 ###
-class exports.ChannelCollection
+class exports.ChannelCollection extends EventEmitter
 
   ###*
   # A new data channel is available
