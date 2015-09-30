@@ -1,4 +1,4 @@
-Promise = require('./compat').compat.Promise
+{Promise} = require('./internal/promise')
 Peer = require('./peer').Peer
 
 StreamCollection = require('./internal/stream_collection').StreamCollection
@@ -7,6 +7,7 @@ ChannelCollection = require('./internal/channel_collection').ChannelCollection
 
 ###*
 # Represents a remote user of the room
+# @module rtc
 # @class rtc.RemotePeer
 # @extends rtc.Peer
 #

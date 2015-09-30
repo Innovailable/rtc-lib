@@ -3,6 +3,7 @@ Stream = require('./stream').Stream
 
 ###*
 # Represents the local user of the room
+# @module rtc
 # @class rtc.LocalPeer
 # @extends rtc.Peer
 #
@@ -11,8 +12,20 @@ Stream = require('./stream').Stream
 class exports.LocalPeer extends Peer
 
   constructor: () ->
+    ###*
+    # Contains local streams offered to all remote peers
+    # @property streams
+    # @type Object
+    ###
     @streams = {}
+
+    ###*
+    # Contains all DataChannel configurations negotiated with all remote peers
+    # @property channels
+    # @type Object
+    ###
     @channels = {}
+
     @_status = {}
 
 

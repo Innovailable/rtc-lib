@@ -1,5 +1,9 @@
+{compat} = require('./compat')
+
+
 ###*
 # A wrapper around an HTML5 MediaStream
+# @module rtc
 # @class rtc.Stream
 #
 # @constructor

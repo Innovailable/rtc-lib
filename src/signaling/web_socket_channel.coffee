@@ -2,6 +2,10 @@
 EventEmitter = require('events').EventEmitter
 
 
+###*
+# @module rtc.signaling
+# @class rtc.signaling.WebSocketChannel
+###
 class exports.WebSocketChannel extends EventEmitter
 
   constructor: (@address) ->

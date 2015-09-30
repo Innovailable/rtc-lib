@@ -3,6 +3,7 @@
 
 ###*
 # Helper which handles DataChannel negotiation for RemotePeer
+# @module rtc.internal
 # @class rtc.internal.ChannelCollection
 ###
 class exports.ChannelCollection extends EventEmitter

@@ -9,6 +9,7 @@ PeerConnection = require('./peer_connection.coffee').PeerConnection
 
 ###*
 # A virtual room which connects multiple Peers
+# @module rtc
 # @class rtc.Room
 #
 # @constructor

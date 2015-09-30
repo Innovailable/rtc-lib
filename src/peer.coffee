@@ -2,6 +2,7 @@ EventEmitter = require('events').EventEmitter
 
 ###*
 # A user in the room
+# @module rtc
 # @class rtc.Peer
 ###
 class exports.Peer extends EventEmitter

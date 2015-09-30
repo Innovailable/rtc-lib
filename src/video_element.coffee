@@ -2,6 +2,10 @@ Stream = require('./stream').Stream
 Peer = require('./peer').Peer
 
 
+###*
+# @module rtc
+# @class rtc.MediaDomElement
+###
 class exports.MediaDomElement
 
   constructor: (@dom, data) ->

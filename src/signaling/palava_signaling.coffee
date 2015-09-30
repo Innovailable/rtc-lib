@@ -2,6 +2,10 @@
 EventEmitter = require('events').EventEmitter
 
 
+###*
+# @module rtc.signaling
+# @class rtc.signaling.PalavaSignalingPeer
+###
 class exports.PalavaSignalingPeer extends EventEmitter
 
   constructor: (@channel, @id, @status, @first) ->

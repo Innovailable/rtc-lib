@@ -6,6 +6,10 @@ DataChannel = require('./data_channel').DataChannel
 
 compat = require('./compat').compat
 
+###*
+# @class rtc.PeerConnection
+# @module rtc
+###
 class exports.PeerConnection extends EventEmitter
 
   constructor: (@offering, @options) ->

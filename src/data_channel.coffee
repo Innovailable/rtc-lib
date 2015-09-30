@@ -3,6 +3,7 @@ EventEmitter = require('events').EventEmitter
 
 ###*
 # A wrapper for RTCDataChannel. Used to transfer custom data between peers.
+# @module rtc
 # @class rtc.DataChannel
 #
 # @constructor

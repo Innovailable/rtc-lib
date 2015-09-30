@@ -1,7 +1,10 @@
 Deferred = require('es6-deferred')
 EventEmitter = require('events').EventEmitter
 
-
+###*
+# @module rtc.signaling
+# @class rtc.signaling.MucSignalingPeer
+###
 class MucSignalingPeer extends EventEmitter
 
   constructor: (@channel, @peer_id, @status) ->
