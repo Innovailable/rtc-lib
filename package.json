@@ -8,9 +8,7 @@
     "url": "https://github.com/innovailable/innovailable/rtc-lib.git"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive",
-    "doc": "./node_modules/.bin/codo src -p true -o doc",
-    "doc-private": "./node_modules/.bin/codo -p false -o ./doc-private src"
+    "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive"
   },
   "version": "0.0.1",
   "dependencies": {

@@ -21,37 +21,43 @@ compile: $(BUNDLE) $(DEP_BUNDLE)
 
 min: $(MIN_BUNDLE) $(MIN_DEP_BUNDLE)
 
+init: node_modules
+
 watch:
 	while inotifywait -e close_write -r src ; do sleep 1; make; echo ; done
 
 # actual work
 
-clean:
-	rm -r out
+node_modules: package.json
+	npm install
+	touch node_modules
 
-doc:
+clean:
+	rm -r out doc
+
+doc: init
 	./node_modules/.bin/yuidoc --syntaxtype coffee -e .coffee -o doc src
 
-test:
+test: init
 	npm test
 
-karma: $(TEST_BUNDLE)
+karma: init $(TEST_BUNDLE)
 	node_modules/.bin/karma start karma.conf.js
 
-$(BUNDLE): $(SOURCES) Makefile
+$(BUNDLE): $(SOURCES) init Makefile
 	@mkdir -p $(OUT_DIR)
 	node_modules/.bin/browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d --no-bundle-external $(MAIN_SRC) -o $@
 
-$(DEP_BUNDLE): $(SOURCES) Makefile
+$(DEP_BUNDLE): $(SOURCES) init Makefile
 	@mkdir -p $(OUT_DIR)
 	node_modules/.bin/browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d $(MAIN_SRC) -o $@
 
-$(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) Makefile
+$(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) init Makefile
 	node_modules/.bin/browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d $(MAIN_SRC) $(TEST_SOURCES) -o $@
 
-%.min.js: %.js Makefile
+%.min.js: %.js init Makefile
 	node_modules/.bin/uglifyjs --compress --mangle -o $@ -- $<
 
 
-.PHONY: all compile min clean doc test karma
+.PHONY: all compile min clean doc test karma init
 
