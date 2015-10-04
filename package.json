@@ -13,6 +13,7 @@
   "version": "0.0.1",
   "dependencies": {
     "browserify": "^11.2.0",
+    "coffee-script": "^1.10.0",
     "es6-promise": "^3.0.2",
     "extend": "^3.0.0",
     "uglifyjs": "^2.4.10"
@@ -24,6 +25,9 @@
     "chai": "^3.3.0",
     "chai-as-promised": "^5.1.0",
     "coffee-script": "^1.10.0",
+    "easy-signaling": "^1.0.0",
+    "express": "^4.13.3",
+    "express-ws": "^1.0.0-rc.2",
     "js-combinatorics": "^0.5.0",
     "karma": "^0.13.10",
     "karma-chrome-launcher": "^0.2.0",

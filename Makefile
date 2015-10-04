@@ -41,6 +41,9 @@ doc: init
 test: init
 	npm test
 
+example: compile
+	node example/serve.js
+
 karma: init $(TEST_BUNDLE)
 	node_modules/.bin/karma start karma.conf.js
 
@@ -59,5 +62,4 @@ $(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) init Makefile
 	node_modules/.bin/uglifyjs --compress --mangle -o $@ -- $<
 
 
-.PHONY: all compile min clean doc test karma init
-
+.PHONY: all compile min clean doc test karma init example

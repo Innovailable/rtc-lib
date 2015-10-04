@@ -1,6 +1,10 @@
 $(function() {
+    // construct websocket url from current location
+    var loc = window.location;
+    var signaling_url = 'ws://' + loc.hostname + ':' + loc.port + '/signaling';
+
     // create a room
-    var room = new rtc.Room('ws://ladon.local:8080');
+    var room = new rtc.Room(signaling_url);
 
     // create and display local video/audio
     var stream = room.local.addStream();
