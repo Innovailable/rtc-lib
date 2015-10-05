@@ -1,7 +1,9 @@
 {Promise} = require('../internal/promise')
 EventEmitter = require('events').EventEmitter
 
-
+###*
+# @module rtc.signaling
+###
 ###*
 # @module rtc.signaling
 # @class rtc.signaling.WebSocketChannel

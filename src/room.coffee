@@ -8,8 +8,10 @@ LocalPeer = require('./local_peer.coffee').LocalPeer
 PeerConnection = require('./peer_connection.coffee').PeerConnection
 
 ###*
-# A virtual room which connects multiple Peers
 # @module rtc
+###
+###*
+# A virtual room which connects multiple Peers
 # @class rtc.Room
 #
 # @constructor

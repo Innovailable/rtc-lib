@@ -2,8 +2,10 @@ Peer = require('./peer').Peer
 Stream = require('./stream').Stream
 
 ###*
-# Represents the local user of the room
 # @module rtc
+###
+###*
+# Represents the local user of the room
 # @class rtc.LocalPeer
 # @extends rtc.Peer
 #
@@ -13,7 +15,7 @@ class exports.LocalPeer extends Peer
 
   constructor: () ->
     ###*
-    # Contains local streams offered to all remote peers
+    # Contains promises of the local streams offered to all remote peers
     # @property streams
     # @type Object
     ###
@@ -33,6 +35,7 @@ class exports.LocalPeer extends Peer
   # Get an item of the status transferred to all remote peers
   # @method status
   # @param {String} key The key of the value. Will return
+  # @return The value associated with the key
   ###
   ###*
   # Set an item of the status transferred to all remote peers
@@ -106,6 +109,7 @@ class exports.LocalPeer extends Peer
   # Get local stream
   # @method stream
   # @param {String} [name='stream'] Name of the stream
+  # @return {Promise -> rtc.Stream} Promise of the stream
   ###
   stream: (name=@DEFAULT_STREAM) ->
     return @streams[name]

@@ -1,15 +1,26 @@
 {Deferred} = require('../internal/promise')
+{Signaling,SignalingPeer} = require('./signaling')
 EventEmitter = require('events').EventEmitter
+
+###*
+# @module rtc.signaling
+###
 
 ###*
 # Signaling peer for multi user chats.
 #
 # For a detailed description of the signaling protocol see `rtc.signaling.MucSignaling`
 #
-# @module rtc.signaling
+# @extends rtc.signaling.SignalingPeer
 # @class rtc.signaling.MucSignalingPeer
+#
+# @constructor
+# @param {rtc.signaling.Channel} channel The channel to the siganling server
+# @param {String} peer_id The id of the remote peer
+# @param {Object} status The status of the remote peer
+# @param {Boolean} first Whether the local peer was in the room before the remote peer
 ###
-class exports.MucSignalingPeer extends EventEmitter
+class exports.MucSignalingPeer extends SignalingPeer
 
   constructor: (@channel, @peer_id, @status, @first) ->
     recv_msg = (data) =>
@@ -54,33 +65,37 @@ class exports.MucSignalingPeer extends EventEmitter
 #
 # The following messages are sent to the server:
 #
-#     // join the room
+#     // join the room. has to be sent before any other message.
+#     // response will be 'joined' on success
+#     // other peers in the room will get 'peer_joined'
 #     {
 #       "type": "join",
-#       "status": {}
+#       "status": { .. status .. }
 #     }
 #
-#     // leave the room
+#     // leave the room. server will close the connectino.
 #     {
 #       "type": "leave"
 #     }
 #
-#     // update status
+#     // update status object
+#     // other peers will get 'peer_status'
 #     {
 #       "type": "status",
-#       "status": {}
+#       "status": { .. status .. }
 #     }
 #
-#     // send message to a peer
+#     // send message to a peer. will be received as 'to'
 #     {
 #       "type": "to",
 #       "peer": "peer_id",
+#       "event": "event_id",
 #       "data": { .. custom data .. }
 #     }
 #
 # The following messages are received form the server:
 #
-#     // joined the room
+#     // joined the room. is the response to 'join'
 #     {
 #       "type": "joined",
 #       "peers": {
@@ -88,27 +103,27 @@ class exports.MucSignalingPeer extends EventEmitter
 #       }
 #     }
 #
-#     // peer joined the room
+#     // another peer joined the room.
 #     {
 #       "type": "peer_joined",
 #       "peer": "peer_id",
 #       "status": { .. status .. }
 #     }
 #
-#     // peer updated its status
+#     // anosther peer updated its status object using 'status'
 #     {
 #       "type": "peer_status",
 #       "peer": "peer_id",
 #       "status": { .. status .. }
 #     }
 #
-#     // peer left
+#     // another peer left the room
 #     {
 #       "type": "peer_left",
 #       "peer": "peer_id"
 #     }
 #
-#     // message from peer
+#     // message from another peer sent by 'to'
 #     {
 #       "type": "from",
 #       "peer": "peer_id",
@@ -118,10 +133,14 @@ class exports.MucSignalingPeer extends EventEmitter
 #
 # The messages transmitted in the `to`/`from` messages are emitted as events in `MucSignalingPeer`
 #
-# @module rtc.signaling
+# @extends rtc.signaling.Signaling
 # @class rtc.signaling.MucSignaling
+#
+# @constructor
+# @param {rtc.signaling.Channel} channel The channel to the signaling server
+# @param {Object} status The status of the local peer
 ###
-class exports.MucSignaling extends EventEmitter
+class exports.MucSignaling extends Signaling
 
   constructor: (@channel, @status) ->
     join_d = new Deferred()

@@ -34,6 +34,10 @@ $(function() {
         });
     });
 
+    room.on('closed', function() {
+        $('body').html('Connection closed');
+    });
+
     // join the room
     room.connect().then(function() { console.log('connected!'); });
 });

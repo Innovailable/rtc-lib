@@ -1,13 +1,15 @@
 ###*
-# Alias for native promises or a polyfill if not supported
 # @module rtc.internal
+###
+
+###*
+# Alias for native promises or a polyfill if not supported
 # @class rtc.internal.Promise
 ###
 exports.Promise = global.Promise || require('es6-promise').Promise
 
 ###*
 # Helper to implement deferred execution with promises
-# @module rtc.internal
 # @class rtc.internal.Deferred
 ###
 ###*

@@ -2,8 +2,10 @@
 EventEmitter = require('events').EventEmitter
 
 ###*
-# Helper handling the mapping of streams for RemotePeer
 # @module rtc.internal
+###
+###*
+# Helper handling the mapping of streams for RemotePeer
 # @class rtc.internal.StreamCollection
 #
 # @constructor

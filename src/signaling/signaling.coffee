@@ -1,12 +1,18 @@
+{EventEmitter} = require('events')
+
+###*
+# @module rtc.signaling
+###
+
 ###*
 # Concept of a class implementing signaling. Might use a `rtc.signaling.Channel` to abstract the connection to the server.
 #
 # You do not have to extend this claass, just implement the functionality.
 #
-# @module rtc.signaling
+# @extends events.EventEmitter
 # @class rtc.signaling.Signaling
 ###
-class exports.Signaling
+class exports.Signaling extends EventEmitter
 
   ###*
   # A new peer joined the room
@@ -38,10 +44,51 @@ class exports.Signaling
 #
 # You do not have to extend this class, just implement the functionality.
 #
-# @module rtc.signaling
+# @extends events.EventEmitter
 # @class rtc.signaling.SignalingPeer
 ###
-class exports.SignalingPeer
+class exports.SignalingPeer extends EventEmitter
+
+  ###*
+  # The remote peer left the room
+  # @event left
+  ###
+
+  ###*
+  # Received a message from the remote peer
+  # @event message
+  # @param {String} event ID of the event
+  # @param {Obejct} data Payload of the event
+  ###
+
+  ###*
+  # The status object of the remote peer was updated
+  # @event new_status
+  # @param {Object} status The new status
+  ###
+
+  ###*
+  # The status object of the remote peer
+  # @property status
+  # @type Object
+  # @readonly
+  ###
+
+  ###*
+  # Whether the local user was in the room before the remote user (used to determine which peer will initiate the connection)
+  # @property first
+  # @type Boolean
+  # @readonly
+  ###
+
+  ###*
+  # Sends the event with the given payload to the remote peer
+  # @method send
+  # @param {String} event The id of the event
+  # @param {Object} data The payload of the event
+  # @return {Promise} Promise which will be resolved once the message is sent
+  ###
+  send: (event, data={}) -> throw new Error("Not implemented")
 
 
 ###*
@@ -49,10 +96,10 @@ class exports.SignalingPeer
 #
 # You do not have to extend this class, just implement the functionality.
 #
-# @module rtc.signaling
+# @extends events.EventEmitter
 # @class rtc.signaling.Channel
 ###
-class exports.Channel
+class exports.Channel extends EventEmitter
 
   ###*
   # A message was received from the signaling server

@@ -2,8 +2,10 @@
 {EventEmitter} = require('events')
 
 ###*
-# Helper which handles DataChannel negotiation for RemotePeer
 # @module rtc.internal
+###
+###*
+# Helper which handles DataChannel negotiation for RemotePeer
 # @class rtc.internal.ChannelCollection
 ###
 class exports.ChannelCollection extends EventEmitter

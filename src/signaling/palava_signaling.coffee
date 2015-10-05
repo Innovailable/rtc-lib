@@ -3,9 +3,11 @@ EventEmitter = require('events').EventEmitter
 
 
 ###*
-# Signaling peer compatible with the framing of palava signaling
-#
 # @module rtc.signaling
+###
+
+###*
+# Signaling peer compatible with the framing of palava signaling
 # @class rtc.signaling.PalavaSignalingPeer
 ###
 class exports.PalavaSignalingPeer extends EventEmitter
@@ -44,8 +46,6 @@ class exports.PalavaSignalingPeer extends EventEmitter
 
 ###*
 # Signaling implementation compatible with the framing of palava signaling
-#
-# @module rtc.signaling
 # @class rtc.signaling.PalavaSignaling
 ###
 class exports.PalavaSignaling extends EventEmitter

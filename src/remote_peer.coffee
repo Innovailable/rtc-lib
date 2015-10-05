@@ -6,8 +6,10 @@ ChannelCollection = require('./internal/channel_collection').ChannelCollection
 
 
 ###*
-# Represents a remote user of the room
 # @module rtc
+###
+###*
+# Represents a remote user of the room
 # @class rtc.RemotePeer
 # @extends rtc.Peer
 #
