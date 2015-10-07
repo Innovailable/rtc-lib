@@ -36,7 +36,7 @@ clean:
 	rm -r out doc
 
 doc: init
-	./node_modules/.bin/yuidoc --syntaxtype coffee -e .coffee -o doc src
+	./node_modules/.bin/yuidoc --syntaxtype coffee -e .coffee -o doc src --themedir yuidoc-theme
 
 test: init
 	npm test
