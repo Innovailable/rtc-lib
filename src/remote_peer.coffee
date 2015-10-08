@@ -43,7 +43,7 @@ class exports.RemotePeer extends Peer
   # A new data channel is available from the peer
   # @event data_channel_added
   # @param {String} name Name of the channel
-  # @param {Promise -> rtc.Stream} stream Promise of the channel
+  # @param {Promise -> rtc.DataChannel} channel Promise of the channel
   ###
 
   constructor: (@peer_connection, @signaling, @local, @options) ->

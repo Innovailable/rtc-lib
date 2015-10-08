@@ -1,5 +1,5 @@
 {Deferred} = require('../internal/promise')
-EventEmitter = require('events').EventEmitter
+{Signaling,SignalingPeer} = require('./signaling')
 
 
 ###*
@@ -9,8 +9,9 @@ EventEmitter = require('events').EventEmitter
 ###*
 # Signaling peer compatible with the framing of palava signaling
 # @class rtc.signaling.PalavaSignalingPeer
+# @extends rtc.signaling.SignalingPeer
 ###
-class exports.PalavaSignalingPeer extends EventEmitter
+class exports.PalavaSignalingPeer extends SignalingPeer
 
   constructor: (@channel, @id, @status, @first) ->
     recv_msg = (data) =>
@@ -47,8 +48,9 @@ class exports.PalavaSignalingPeer extends EventEmitter
 ###*
 # Signaling implementation compatible with the framing of palava signaling
 # @class rtc.signaling.PalavaSignaling
+# @extends rtc.signaling.Signaling
 ###
-class exports.PalavaSignaling extends EventEmitter
+class exports.PalavaSignaling extends Signaling
 
   constructor: (@channel, @room, @status) ->
     @peers = {}

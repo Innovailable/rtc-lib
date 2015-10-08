@@ -1,14 +1,14 @@
 {Promise} = require('../internal/promise')
-EventEmitter = require('events').EventEmitter
+{Channel} = require('./signaling')
 
 ###*
 # @module rtc.signaling
 ###
 ###*
-# @module rtc.signaling
 # @class rtc.signaling.WebSocketChannel
+# @extends rtc.signaling.Channel
 ###
-class exports.WebSocketChannel extends EventEmitter
+class exports.WebSocketChannel extends Channel
 
   constructor: (@address) ->
 

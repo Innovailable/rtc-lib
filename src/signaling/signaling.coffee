@@ -38,6 +38,13 @@ class exports.Signaling extends EventEmitter
   ###
   close: () -> throw new Error("Not implemented")
 
+  ###*
+  # Sets the local status object and broadcasts the change to the peers
+  # @method setStatus
+  # @param {Object} obj New status object
+  ###
+  setStatus: (obj) -> throw new Error("Not implemented")
+
 
 ###*
 # Concept of a class implementing a signaling connection to a peer.

@@ -10,12 +10,59 @@ compat = require('./compat').compat
 # @module rtc
 ###
 ###*
+# Wrapper around native RTCPeerConnection
+#
+# Provides events for new streams and data channels. Signaling information has
+# to be forwarded from events emitted by this object to the remote
+# PeerConnection.
+#
 # @class rtc.PeerConnection
+# @extends events.EventEmitter
+#
+# @constructor
+# @param {Boolean} offering True if the local peer should initiate the connection
+# @param {Object} options Options object passed on from `Room`
 ###
 class exports.PeerConnection extends EventEmitter
 
+  ###*
+  # New local ICE candidate which should be signaled to remote peer
+  # @event ice_candiate
+  # @param {Object} candidate The ice candidate
+  ###
+
+  ###*
+  # New remote stream was added to the PeerConnection
+  # @event stream_added
+  # @param {rtc.Stream} stream The stream
+  ###
+
+  ###*
+  # New DataChannel to the remote peer is ready to be used
+  # @event data_channel_ready
+  # @param {rtc.DataChannel} channel The data channel
+  ###
+
+  ###*
+  # New offer or answer which should be signaled to the remote peer
+  # @event signaling
+  # @param {Object} obj The signaling message
+  ###
+
+  ###*
+  # The PeerConnection was closed
+  # @event closed
+  ###
+
   constructor: (@offering, @options) ->
-    @pc = new compat.PeerConnection(@_iceOptions())
+    ice_servers = []
+
+    if @options.stun?
+      ice_servers.push({url: @options.stun})
+
+    # TODO: STUN
+
+    @pc = new compat.PeerConnection({iceServers: ice_servers})
 
     @connect_d = new Deferred()
     @connected = false
@@ -54,6 +101,11 @@ class exports.PeerConnection extends EventEmitter
       #console.log(event)
 
 
+  ###*
+  # Add new signaling information received from remote peer
+  # @method signaling
+  # @param {Object} data The signaling information
+  ####
   signaling: (data) ->
     sdp = new compat.SessionDescription(data)
 
@@ -64,6 +116,11 @@ class exports.PeerConnection extends EventEmitter
       @_connectError(err)
 
 
+  ###*
+  # Add a remote ICE candidate
+  # @method addIceCandidate
+  # @param {Object} desc The candidate
+  ###
   addIceCandidate: (desc) ->
     if desc.candidate?
       candidate = new compat.IceCandidate(desc)
@@ -73,19 +130,12 @@ class exports.PeerConnection extends EventEmitter
       console.log("ICE trickling stopped")
 
 
-  _iceOptions: () ->
-    servers = []
-
-    if @options.stun?
-      servers.push({url: @options.stun})
-
-    # TODO: turn
-
-    return {
-      iceServers: servers
-    }
-
-
+  ###*
+  # Returns the options for the offer/answer
+  # @method _oaOptions
+  # @private
+  # @return {Object}
+  ###
   _oaOptions: () ->
     return {
       optional: []
@@ -96,12 +146,24 @@ class exports.PeerConnection extends EventEmitter
     }
 
 
+  ###*
+  # Set the remote description
+  # @method _setRemoteDescription
+  # @private
+  # @param {Object} sdp The remote SDP
+  # @return {Promise} Promise which will be resolved once the remote description was set successfully
+  ###
   _setRemoteDescription: (sdp) ->
     return new Promise (resolve, reject) =>
       description = new rtc.compat.SessionDescription(sdp)
       @pc.setRemoteDescription(sdp, resolve, reject)
 
 
+  ###*
+  # Create offer, set it on local description and emit it
+  # @method _offer
+  # @private
+  ###
   _offer: () ->
     return new Promise (resolve, reject) =>
       @pc.createOffer(resolve, reject, @_oaOptions())
@@ -111,6 +173,11 @@ class exports.PeerConnection extends EventEmitter
       @_connectError(err)
 
 
+  ###*
+  # Create answer, set it on local description and emit it
+  # @method _offer
+  # @private
+  ###
   _answer: () ->
     new Promise (resolve, reject) =>
       @pc.createAnswer(resolve, reject, @_oaOptions())
@@ -120,6 +187,13 @@ class exports.PeerConnection extends EventEmitter
       @_connectError(err)
 
 
+  ###*
+  # Set local description and emit it
+  # @method _processLocalSdp
+  # @private
+  # @param {Object} sdp The local SDP
+  # @return {Promise} Promise which will be resolved once the local description was set successfully
+  ###
   _processLocalSdp: (sdp) ->
     new Promise (resolve, reject) =>
       success = () =>
@@ -134,6 +208,12 @@ class exports.PeerConnection extends EventEmitter
       @pc.setLocalDescription(sdp, success, reject)
 
 
+  ###*
+  # Mark connection attempt as failed
+  # @method _connectError
+  # @private
+  # @param {Error} err Error causing connection to fail
+  ###
   _connectError: (err) ->
     # TODO: better errors
     @connect_d.reject(err)
@@ -141,14 +221,30 @@ class exports.PeerConnection extends EventEmitter
     @emit('error', err)
 
 
+  ###*
+  # Add local stream
+  # @method addStream
+  # @param {rtc.Stream} stream The local stream
+  ###
   addStream: (stream) ->
     @pc.addStream(stream.stream)
 
 
+  ###*
+  # Remove local stream
+  # @method removeStream
+  # @param {rtc.Stream} stream The local stream
+  ###
   removeSream: (stream) ->
     @pc.removeStream(stream.stream)
 
 
+  ###*
+  # Add DataChannel. Will only actually do something if `offering` is `true`.
+  # @method addDataChannel
+  # @param {String} name Name of the data channel
+  # @param {Object} desc Options passed to `RTCPeerConnection.createDataChannel()`
+  ###
   addDataChannel: (name, options) ->
     if @offering
       channel = @pc.createDataChannel(name, options)
@@ -157,6 +253,11 @@ class exports.PeerConnection extends EventEmitter
         @emit('data_channel_ready', new DataChannel(channel))
 
 
+  ###*
+  # Establish connection with remote peer. Connection will be established once both peers have called this functio
+  # @method connect
+  # @return {Promise} Promise which will be resolved once the connection is established
+  ###
   connect: () ->
     if not @connected
       if @offering
@@ -171,6 +272,10 @@ class exports.PeerConnection extends EventEmitter
     return @connect_d.promise
 
 
+  ###*
+  # Close the connection to the remote peer
+  # @method close
+  ###
   close: () ->
     @pc.close()
     @emit 'closed'
