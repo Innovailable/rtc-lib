@@ -56,7 +56,7 @@ class exports.LocalPeer extends Peer
   # Add data channel which will be negotiated with all remote peers
   # @method addDataChannel
   # @param {String} [name='data'] Name of the data channel
-  # @param {Object} [desc] Options passed to `RTCDataChannel.createDataChannel()`
+  # @param {Object} [desc={ordered: true}] Options passed to `RTCDataChannel.createDataChannel()`
   ###
   addDataChannel: (name, desc) ->
     if typeof name != 'string'
@@ -79,6 +79,7 @@ class exports.LocalPeer extends Peer
   # @method addStream
   # @param {String} [name='stream'] Name of the stream
   # @param {Promise -> rtc.Stream | rtc.Stream | Object} stream The stream, a promise to the stream or the configuration to create a stream with `rtc.Stream.createStream()`
+  # @return {Promise -> rtc.Stream} Promise of the stream which was added
   ###
   addStream: (name, obj) ->
     # helper to actually save stream

@@ -46,7 +46,7 @@ class exports.MucSignalingPeer extends SignalingPeer
 
         when 'peer_status'
           @status = data.status
-          @emit('new_status', @status)
+          @emit('status_changed', @status)
 
     @channel.on('message', recv_msg)
 

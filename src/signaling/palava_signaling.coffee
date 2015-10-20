@@ -28,7 +28,7 @@ class exports.PalavaSignalingPeer extends SignalingPeer
     @channel.on('message', recv_msg)
 
     @on 'peer_updated_status', (status) =>
-      @emit('new_status', status)
+      @emit('status_changed', status)
 
     @on 'peer_left', () =>
       @emit('closed')

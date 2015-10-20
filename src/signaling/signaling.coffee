@@ -70,7 +70,7 @@ class exports.SignalingPeer extends EventEmitter
 
   ###*
   # The status object of the remote peer was updated
-  # @event new_status
+  # @event status_changed
   # @param {Object} status The new status
   ###
 

@@ -11,9 +11,6 @@ $(function() {
     var ve = new rtc.MediaDomElement($('#self'), room.local);
     ve.mute();
 
-    // add a data channel to all incoming peers
-    room.local.addDataChannel();
-
     // create video for peers
     room.on('peer_joined', function(peer) {
         var view = $('<video>');
@@ -27,11 +24,13 @@ $(function() {
             view.remove();
         });
 
-        peer.channel().then(function(channel) {
-            console.log("got the channel!");
+        peer.addDataChannel().then(function(channel) {
+            console.log("got da channel!");
         }).catch(function(err) {
             console.log(err);
         });
+
+        peer.connect();
     });
 
     room.on('closed', function() {

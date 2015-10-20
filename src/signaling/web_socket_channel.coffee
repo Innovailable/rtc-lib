@@ -11,8 +11,14 @@
 class exports.WebSocketChannel extends Channel
 
   constructor: (@address, parts...) ->
-    for part in parts
-      @address += '/'
+    if parts.length > 0
+      # remove trailing slashes
+      while @address.endsWith('/')
+        @address = @address.substr(0, @address.length - 1)
+
+      # add parts
+      for part in parts
+        @address += '/' + encodeUriComponent(part)
 
 
   connect: () ->

@@ -106,8 +106,8 @@ class exports.RemotePeer extends Peer
 
     # status handling
  
-    @signaling.on 'status_changed', (key, value) =>
-      @emit('status_changed', key, value)
+    @signaling.on 'status_changed', (status) =>
+      @emit('status_changed', status)
 
     # communication
 
