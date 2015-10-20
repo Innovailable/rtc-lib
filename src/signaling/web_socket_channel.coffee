@@ -10,7 +10,9 @@
 ###
 class exports.WebSocketChannel extends Channel
 
-  constructor: (@address) ->
+  constructor: (@address, parts...) ->
+    for part in parts
+      @address += '/'
 
 
   connect: () ->

@@ -138,11 +138,12 @@ class exports.MucSignalingPeer extends SignalingPeer
 #
 # @constructor
 # @param {rtc.signaling.Channel} channel The channel to the signaling server
-# @param {Object} status The status of the local peer
 ###
 class exports.MucSignaling extends Signaling
 
-  constructor: (@channel, @status) ->
+  constructor: (@channel) ->
+    @status = {}
+
     join_d = new Deferred()
     @join_p = join_d.promise
 
