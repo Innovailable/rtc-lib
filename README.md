@@ -8,18 +8,28 @@ offer users and developers a better experience.
 
 The design goals and principles are
 
-* hide complexity of WebRTC
 * allow simple code for basic usage as well as complex usage scenarios
-* heavy use of `Promise`s
+* hide complexity of WebRTC
+* heavy use of Promises
 * support for multiple Streams and DataChannels
-* consistent handling of errors and success notification
+* consistent handling of errors and success notifications
 
 The library is still under development but should provide basic functionality.
 If something does not work as expected please file a bug report.
 
 ## How to use this?
 
-Here is a simple example using this library
+The central element of the library is a `Room`. Multiple users, which are called
+`Peer`, can join a room and will create peer to peer connections to each other.
+You can send audio/video data to the peers through this connection, this is
+represented by a `Stream`, or send custom data using a `DataChannel`.
+
+All streams added to the local peer using `addStream()` will be sent to all
+peers which are in the room. If you want to send a stream only to specific peers
+you can add them later using `addStream()` on the remote peer as soon as they
+are encountered. The same applies to data channels.
+
+Here is a simple example:
 
     // create a room
     var room = new rtc.Room("wss://signaling.innovailable.eu/testroom");
@@ -30,7 +40,7 @@ Here is a simple example using this library
     // display that stream
     var ve = new rtc.MediaDomElement($('video'), stream);
 
-    // create video for peers
+    // get notified whenever we meet a new peer
     room.on('peer_joined', function(peer) {
         // create a video tag for the peer
         var view = $('<video>');
@@ -54,8 +64,9 @@ For a more complex example have a look at the `example` folder. You can run this
 code using `make example` which will create a server which includes everything
 you need. Feel free to play around with this test code to get to know the API.
 
-The complete API documentation is embedded as YUIDoc in the source code. You can
-create an HTML page from it using `make doc` or view it online
+The complete API documentation is embedded as
+[YUIDoc](http://yui.github.io/yuidoc/) in the source code. You can create an
+HTML page from it using `make doc` or view it online
 [here](http://innovailable.github.io/rtc-lib/).
 
 ## What else do I need?
