@@ -12,8 +12,7 @@
   },
   "version": "0.0.1",
   "dependencies": {
-    "es6-promise": "^3.0.2",
-    "extend": "^3.0.0"
+    "es6-promise": "^3.0.2"
   },
   "keywords": [
     "webrtc"
