@@ -1,11 +1,11 @@
 EventEmitter = require('events').EventEmitter
 
-{WebSocketChannel} = require('./signaling/web_socket_channel.coffee')
-{MucSignaling} = require('./signaling/muc_signaling.coffee')
+{WebSocketChannel} = require('./signaling/web_socket_channel')
+{MucSignaling} = require('./signaling/muc_signaling')
 
-RemotePeer = require('./remote_peer.coffee').RemotePeer
-LocalPeer = require('./local_peer.coffee').LocalPeer
-PeerConnection = require('./peer_connection.coffee').PeerConnection
+RemotePeer = require('./remote_peer').RemotePeer
+LocalPeer = require('./local_peer').LocalPeer
+PeerConnection = require('./peer_connection').PeerConnection
 
 ###*
 # @module rtc

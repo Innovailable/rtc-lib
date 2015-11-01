@@ -4,6 +4,8 @@ SOURCES=$(wildcard src/*.coffee) $(wildcard src/*/*.coffee)
 TEST_SOURCES=$(wildcard test/bootstrap.coffee test/unit/*.coffee test/unit/*/*.coffee)
 MAIN_SRC=src/lib.coffee
 
+JS_SOURCES=${SOURCES:src/%.coffee=dist/%.js}
+
 OUT_DIR=out
 OUT_NAME=rtc
 
@@ -15,9 +17,11 @@ TEST_BUNDLE=$(OUT_DIR)/$(OUT_NAME).test.js
 
 # phony stuff
 
-all: compile min
+all: compile bundle min
 
-compile: $(BUNDLE) $(DEP_BUNDLE)
+bundle: $(BUNDLE) $(DEP_BUNDLE)
+
+compile: $(JS_SOURCES)
 
 min: $(MIN_BUNDLE) $(MIN_DEP_BUNDLE)
 
@@ -61,5 +65,14 @@ $(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) init Makefile
 %.min.js: %.js init Makefile
 	node_modules/.bin/uglifyjs --compress --mangle -o $@ -- $<
 
+dist/%.js: src/%.coffee Makefile
+	@mkdir -p `dirname $@`
+	coffee -cb -o `dirname $@` $<
+
+dist: compile
+	npm pack
+
+publish: dist
+	npm publish
 
 .PHONY: all compile min clean doc test karma init example

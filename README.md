@@ -32,7 +32,7 @@ are encountered. The same applies to data channels.
 Here is a simple example:
 
     // create a room
-    var room = new rtc.Room("wss://signaling.innovailable.eu/testroom");
+    var room = new rtc.Room("wss://rtc.innovailable.eu/testroom");
 
     // create a local stream from the users camera
     var stream = room.local.addStream();

@@ -2,9 +2,9 @@ var express = require('express');
 var es = require('easy-signaling');
 var path = require('path');
 
-app = express();
+var app = express();
 
-// server all files in the project directory
+// serve all files in the project directory
 
 app.use(express.static(__dirname + '/..'));
 
