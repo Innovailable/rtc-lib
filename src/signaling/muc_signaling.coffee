@@ -1,58 +1,154 @@
-Deferred = require('es6-deferred')
+{Deferred} = require('../internal/promise')
+{Signaling,SignalingPeer} = require('./signaling')
 EventEmitter = require('events').EventEmitter
 
 ###*
 # @module rtc.signaling
-# @class rtc.signaling.MucSignalingPeer
 ###
-class MucSignalingPeer extends EventEmitter
 
-  constructor: (@channel, @peer_id, @status) ->
-    @channel.on 'message', (data) =>
-      if data.peer == @peer_id
+###*
+# Signaling peer for multi user chats.
+#
+# For a detailed description of the signaling protocol see `rtc.signaling.MucSignaling`
+#
+# @extends rtc.signaling.SignalingPeer
+# @class rtc.signaling.MucSignalingPeer
+#
+# @constructor
+# @param {rtc.signaling.Channel} channel The channel to the siganling server
+# @param {String} peer_id The id of the remote peer
+# @param {Object} status The status of the remote peer
+# @param {Boolean} first Whether the local peer was in the room before the remote peer
+###
+class exports.MucSignalingPeer extends SignalingPeer
+
+  constructor: (@channel, @peer_id, @status, @first) ->
+    recv_msg = (data) =>
+      if data.peer != @peer_id
         # message is not for us
         return
 
       if not data.type?
-        @send('error', "Invalid message")
+        # invalid message
         return
 
       switch data.type
-        when 'event'
+        when 'from'
           if not data.event? or not data.data?
-            @send('error', "Invalid event message")
+            # invalid message
             return
 
           @emit(data.event, data.data)
 
         when 'peer_left'
           @emit('left')
+          @channel.removeListener('message', recv_msg)
 
-        when 'updated_status'
+        when 'peer_status'
           @status = data.status
-          @emit 'updated_status', @status
+          @emit('status_changed', @status)
 
-        else
-          @send('error', "Unable to process message")
+    @channel.on('message', recv_msg)
 
 
   send: (event, data={}) ->
     return @channel.send({
-      type: 'event'
+      type: 'to'
       peer: @peer_id
       event: event
       data: data
     })
 
 
-class exports.MucSignaling extends EventEmitter
+###*
+# Signaling for multi user chats
+#
+# The following messages are sent to the server:
+#
+#     // join the room. has to be sent before any other message.
+#     // response will be 'joined' on success
+#     // other peers in the room will get 'peer_joined'
+#     {
+#       "type": "join",
+#       "status": { .. status .. }
+#     }
+#
+#     // leave the room. server will close the connectino.
+#     {
+#       "type": "leave"
+#     }
+#
+#     // update status object
+#     // other peers will get 'peer_status'
+#     {
+#       "type": "status",
+#       "status": { .. status .. }
+#     }
+#
+#     // send message to a peer. will be received as 'to'
+#     {
+#       "type": "to",
+#       "peer": "peer_id",
+#       "event": "event_id",
+#       "data": { .. custom data .. }
+#     }
+#
+# The following messages are received form the server:
+#
+#     // joined the room. is the response to 'join'
+#     {
+#       "type": "joined",
+#       "peers": {
+#         "peer_id": { .. status .. }
+#       }
+#     }
+#
+#     // another peer joined the room.
+#     {
+#       "type": "peer_joined",
+#       "peer": "peer_id",
+#       "status": { .. status .. }
+#     }
+#
+#     // anosther peer updated its status object using 'status'
+#     {
+#       "type": "peer_status",
+#       "peer": "peer_id",
+#       "status": { .. status .. }
+#     }
+#
+#     // another peer left the room
+#     {
+#       "type": "peer_left",
+#       "peer": "peer_id"
+#     }
+#
+#     // message from another peer sent by 'to'
+#     {
+#       "type": "from",
+#       "peer": "peer_id",
+#       "event": "event_id",
+#       "data": { .. custom data .. }
+#     }
+#
+# The messages transmitted in the `to`/`from` messages are emitted as events in `MucSignalingPeer`
+#
+# @extends rtc.signaling.Signaling
+# @class rtc.signaling.MucSignaling
+#
+# @constructor
+# @param {rtc.signaling.Channel} channel The channel to the signaling server
+###
+class exports.MucSignaling extends Signaling
 
   constructor: (@channel) ->
-    @peers = {}
-    @joined = false
+    @status = {}
 
     join_d = new Deferred()
     @join_p = join_d.promise
+
+    @channel.on 'closed', () =>
+      @emit('closed')
 
     @channel.on 'message', (data) =>
       if not data.type?
@@ -60,14 +156,13 @@ class exports.MucSignaling extends EventEmitter
         return
 
       switch data.type
-        when 'joined_room'
-          if not data.peers? or not data.self?
+        when 'joined'
+          if not data.peers?
             # invalid ...
             return
 
           for peer_id, status of data.peers
-            peer = new SignalingPeer(@channel, peer_id, status)
-            @peers[peer_id] = peer
+            peer = new exports.MucSignalingPeer(@channel, peer_id, status, false)
             @emit('peer_joined', peer)
 
           join_d.resolve()
@@ -77,34 +172,36 @@ class exports.MucSignaling extends EventEmitter
             # invalid ...
             return
 
-          peer = new SignalingPeer(@channel, data.peer, data.status)
-          @peers[data.peer] = peer
+          peer = new exports.MucSignalingPeer(@channel, data.peer, data.status, true)
           @emit('peer_joined', peer)
 
 
-  join: (room, status={}) ->
-    if @joined
-      return Q.reject(new Error("Joined already"))
+  connect: () ->
+    if not @connect_p?
+      @connect_p = @channel.connect().then () =>
+        return @channel.send({
+          type: 'join'
+          status: @status
+        })
+      .then () =>
+        return @join_d
 
-    @joined = true
-
-    return @channel.send({
-      type: 'join_room'
-      room: room
-      status: status
-    }).then () ->
-      return @join_p
+    return @connect_p
 
 
-  set_status: (status) ->
-    return @channel.send({
-      type: 'update_status'
-      status: status
-    })
+  setStatus: (status) ->
+    @status = status
+
+    if @connect_p
+      @connect_p.then () ->
+        return @channel.send({
+          type: 'status'
+          status: status
+        })
 
 
   leave: () ->
     @channel.send({
-      type: 'leave_room'
+      type: 'leave'
     }).then () ->
       @channel.close()

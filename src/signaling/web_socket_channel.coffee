@@ -1,14 +1,24 @@
 {Promise} = require('../internal/promise')
-EventEmitter = require('events').EventEmitter
-
+{Channel} = require('./signaling')
 
 ###*
 # @module rtc.signaling
-# @class rtc.signaling.WebSocketChannel
 ###
-class exports.WebSocketChannel extends EventEmitter
+###*
+# @class rtc.signaling.WebSocketChannel
+# @extends rtc.signaling.Channel
+###
+class exports.WebSocketChannel extends Channel
 
-  constructor: (@address) ->
+  constructor: (@address, parts...) ->
+    if parts.length > 0
+      # remove trailing slashes
+      while @address.endsWith('/')
+        @address = @address.substr(0, @address.length - 1)
+
+      # add parts
+      for part in parts
+        @address += '/' + encodeUriComponent(part)
 
 
   connect: () ->
@@ -37,7 +47,7 @@ class exports.WebSocketChannel extends EventEmitter
           @emit('message', data)
 
         socket.onclose = () =>
-          @emit 'close'
+          @emit 'closed'
 
     return @connect_p
 

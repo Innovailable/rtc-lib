@@ -2,8 +2,10 @@
 
 
 ###*
-# A wrapper around an HTML5 MediaStream
 # @module rtc
+###
+###*
+# A wrapper around an HTML5 MediaStream
 # @class rtc.Stream
 #
 # @constructor

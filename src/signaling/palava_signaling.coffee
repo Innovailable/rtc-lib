@@ -1,15 +1,20 @@
 {Deferred} = require('../internal/promise')
-EventEmitter = require('events').EventEmitter
+{Signaling,SignalingPeer} = require('./signaling')
 
 
 ###*
 # @module rtc.signaling
-# @class rtc.signaling.PalavaSignalingPeer
 ###
-class exports.PalavaSignalingPeer extends EventEmitter
+
+###*
+# Signaling peer compatible with the framing of palava signaling
+# @class rtc.signaling.PalavaSignalingPeer
+# @extends rtc.signaling.SignalingPeer
+###
+class exports.PalavaSignalingPeer extends SignalingPeer
 
   constructor: (@channel, @id, @status, @first) ->
-    @channel.on 'message', (data) =>
+    recv_msg = (data) =>
       if data.sender_id != @id
         # message is not for us
         return
@@ -20,11 +25,14 @@ class exports.PalavaSignalingPeer extends EventEmitter
 
       @emit(data.event, data.data)
 
+    @channel.on('message', recv_msg)
+
     @on 'peer_updated_status', (status) =>
-      @emit('update_status', status)
+      @emit('status_changed', status)
 
     @on 'peer_left', () =>
       @emit('closed')
+      @channel.removeListener('message', recv_msg)
 
 
   send: (event, data={}) ->
@@ -37,14 +45,22 @@ class exports.PalavaSignalingPeer extends EventEmitter
     })
 
 
-class exports.PalavaSignaling extends EventEmitter
+###*
+# Signaling implementation compatible with the framing of palava signaling
+# @class rtc.signaling.PalavaSignaling
+# @extends rtc.signaling.Signaling
+###
+class exports.PalavaSignaling extends Signaling
 
-  constructor: (@channel) ->
+  constructor: (@channel, @room, @status) ->
     @peers = {}
     @joined = false
 
     join_d = new Deferred()
     @join_p = join_d.promise
+
+    @channel.on 'closed', () =>
+      @emit('closed')
 
     @channel.on 'message', (data) =>
       if not data.event?
@@ -74,19 +90,16 @@ class exports.PalavaSignaling extends EventEmitter
           @emit('peer_joined', peer)
 
 
-  join: (room, status) ->
-    if @joined
-      return Q.reject(new Error("Joined already"))
+  connect: () ->
+    if not @connect_p?
+      @connect_p = @channel.connect().then () =>
+        return @channel.send({
+          event: 'join_room'
+          room_id: room
+          status: status
+        })
 
-    @joined = true
-
-    @channel.connect().then () =>
-      return @channel.send({
-        event: 'join_room'
-        room_id: room
-        status: status
-      }).then () =>
-        return @join_p
+    return @connect_p
 
 
   set_status: (status) ->

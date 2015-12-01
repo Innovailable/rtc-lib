@@ -4,6 +4,8 @@ Peer = require('./peer').Peer
 
 ###*
 # @module rtc
+###
+###*
 # @class rtc.MediaDomElement
 ###
 class exports.MediaDomElement

@@ -4,16 +4,28 @@ Peer = require('./peer').Peer
 StreamCollection = require('./internal/stream_collection').StreamCollection
 ChannelCollection = require('./internal/channel_collection').ChannelCollection
 
+merge = () ->
+  # WARNING: later occurences of the same key will overwrite
+  res = {}
+
+  for array in arguments
+    for key, value of array
+      res[key] = value
+
+  return res
+
 
 ###*
-# Represents a remote user of the room
 # @module rtc
+###
+###*
+# Represents a remote user of the room
 # @class rtc.RemotePeer
 # @extends rtc.Peer
 #
 # @constructor
 # @param {rtc.PeerConnection} peer_connection The underlying peer connection
-# @param {rtc.Signaling} signaling The signaling connection to the peer
+# @param {rtc.SignalingPeer} signaling The signaling connection to the peer
 # @param {rtc.LocalPeer} local The local peer
 # @param {Object} options The options object as passed to `Room`
 ###
@@ -41,17 +53,20 @@ class exports.RemotePeer extends Peer
   # A new data channel is available from the peer
   # @event data_channel_added
   # @param {String} name Name of the channel
-  # @param {Promise -> rtc.Stream} stream Promise of the channel
+  # @param {Promise -> rtc.DataChannel} channel Promise of the channel
   ###
 
   constructor: (@peer_connection, @signaling, @local, @options) ->
     # create streams
 
+    @private_streams = {}
+    @private_channels = {}
+
     @stream_collection = new StreamCollection()
     @streams = @stream_collection.streams
     @streams_desc = {}
 
-    @stream_collection.on 'stream_added', (name, stream) ->
+    @stream_collection.on 'stream_added', (name, stream) =>
       @emit('stream_added', name, stream)
 
     # channels stuff
@@ -60,7 +75,7 @@ class exports.RemotePeer extends Peer
     @channels = @channel_collection.channels
     @channels_desc = {}
 
-    @channel_collection.on 'data_channel_added', (name, channel) ->
+    @channel_collection.on 'data_channel_added', (name, channel) =>
       @emit('data_channel_added', name, channel)
 
     # resolve streams and data channels
@@ -91,15 +106,15 @@ class exports.RemotePeer extends Peer
 
     # status handling
  
-    @signaling.on 'status_changed', (key, value) =>
-      @emit('status_changed', key, value)
+    @signaling.on 'status_changed', (status) =>
+      @emit('status_changed', status)
 
     # communication
 
     @signaling.on 'message', (data) =>
       @emit('message', data)
 
-    @signaling.on 'closed', () =>
+    @signaling.on 'left', () =>
       @peer_connection.close()
       @emit('left')
 
@@ -112,7 +127,7 @@ class exports.RemotePeer extends Peer
 
     # we probably want to connect now
 
-    if not @options.auto_connect? or not @options.auto_connect
+    if not @options.auto_connect? or @options.auto_connect
       @connect()
 
 
@@ -142,7 +157,7 @@ class exports.RemotePeer extends Peer
 
       stream_promises = []
 
-      for name, stream of @local.streams
+      for name, stream of merge(@local.streams, @private_streams)
         promise = stream.then (stream) ->
           return [name, stream]
 
@@ -158,7 +173,7 @@ class exports.RemotePeer extends Peer
 
         # create data channels
 
-        for name, options of @local.channels
+        for name, options of merge(@local.channels, @private_channels)
           @peer_connection.addDataChannel(name, options)
           @channels_desc[name] = options
 
@@ -191,6 +206,43 @@ class exports.RemotePeer extends Peer
 
 
   ###*
+  # Add local stream to be sent to this remote peer
+  #
+  # If you use this method you have to set `auto_connect` to `false` in the options object and call `connect()` manually on all remote peers.
+  #
+  # @method addStream
+  # @param {String} [name='stream'] Name of the stream
+  # @param {Promise -> rtc.Stream | rtc.Stream | Object} stream The stream, a promise to the stream or the configuration to create a stream with `rtc.Stream.createStream()`
+  # @return {Promise -> rtc.Stream} Promise of the stream which was added
+  ###
+  addStream: (name, obj) ->
+    if not (@options.auto_connect == false)
+      return Promise.reject("Unable to add streams directly to remote peers without 'auto_connect' option set to 'false'")
+
+    # helper to actually save stream
+    saveStream = (stream_p) =>
+      # TODO: collision detection?
+      @private_streams[name] = stream_p
+      return stream_p
+
+    # name can be omitted ... once
+    if typeof name != 'string'
+      obj = name
+      name = @DEFAULT_STREAM
+
+    if obj?.then?
+      # it is a promise
+      return saveStream(obj)
+    else if obj instanceof Stream
+      # it is the actual stream, turn into promise
+      return saveStream(Promise.resolve(obj))
+    else
+      # we assume we can pass it on to create a stream
+      stream_p = Stream.createStream(obj)
+      return saveStream(stream_p)
+
+
+  ###*
   # Get a data channel to the remote peer. Has to be added by local and remote side to succeed.
   # @method channel
   # @param {String} [name='data'] Name of the data channel
@@ -198,3 +250,31 @@ class exports.RemotePeer extends Peer
   ###
   channel: (name=@DEFAULT_CHANNEL) ->
     @channel_collection.get(name)
+
+
+  ###*
+  # Add data channel which will be negotiated with this remote peer
+  #
+  # If you use this method you have to set `auto_connect` to `false` in the options object and call `connect()` manually on all remote peers.
+  #
+  # @method addDataChannel
+  # @param {String} [name='data'] Name of the data channel
+  # @param {Object} [desc={ordered: true}] Options passed to `RTCDataChannel.createDataChannel()`
+  ###
+  addDataChannel: (name, desc) ->
+    if not (@options.auto_connect == false)
+      return Promise.reject("Unable to add channels directly to remote peers without 'auto_connect' option set to 'false'")
+
+    if typeof name != 'string'
+      desc = name
+      name = @DEFAULT_CHANNEL
+
+    if not desc?
+      # TODO: default handling
+      desc = {
+        ordered: true
+      }
+
+    @private_channels[name] = desc
+
+    return @channel(name)

@@ -1,8 +1,10 @@
 EventEmitter = require('events').EventEmitter
 
 ###*
-# A user in the room
 # @module rtc
+###
+###*
+# A user in the room
 # @class rtc.Peer
 ###
 class exports.Peer extends EventEmitter
@@ -10,8 +12,7 @@ class exports.Peer extends EventEmitter
   ###*
   # The status of the peer has changed
   # @event status_changed
-  # @param {String} key Key of the changed stats
-  # @param value Value of the changed status
+  # @param {Object} status The new status object
   ###
 
   # default names

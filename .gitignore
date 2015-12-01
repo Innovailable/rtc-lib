@@ -1,5 +1,7 @@
 *.sw?
+dist
 out
+*.tgz
 doc
 npm-debug.log
 node_modules
