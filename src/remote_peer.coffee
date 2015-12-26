@@ -56,6 +56,12 @@ class exports.RemotePeer extends Peer
   # @param {Promise -> rtc.DataChannel} channel Promise of the channel
   ###
 
+  ###*
+  # The connection to the peer supplied by the signaling implementation
+  # @property signaling
+  # @type rtc.signaling.SignalingPeer
+  ###
+
   constructor: (@peer_connection, @signaling, @local, @options) ->
     # create streams
 

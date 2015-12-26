@@ -155,7 +155,7 @@ class exports.PeerConnection extends EventEmitter
   ###
   _setRemoteDescription: (sdp) ->
     return new Promise (resolve, reject) =>
-      description = new rtc.compat.SessionDescription(sdp)
+      description = new compat.SessionDescription(sdp)
       @pc.setRemoteDescription(sdp, resolve, reject)
 
 

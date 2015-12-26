@@ -65,6 +65,11 @@ class exports.DataChannel extends EventEmitter
     return Promise.resolve()
 
 
+  close: () ->
+    @channel.close()
+    return Promise.resolve()
+
+
   ###*
   # The label of the DataChannel used to distinguish multiple channels
   # @method label

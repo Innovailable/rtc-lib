@@ -22,9 +22,15 @@ EventEmitter = require('events').EventEmitter
 ###
 class exports.MucSignalingPeer extends SignalingPeer
 
-  constructor: (@channel, @peer_id, @status, @first) ->
+  ###*
+  # The id of the remote peer
+  # @property id
+  # @type String
+  ###
+
+  constructor: (@channel, @id, @status, @first) ->
     recv_msg = (data) =>
-      if data.peer != @peer_id
+      if data.peer != @id
         # message is not for us
         return
 
@@ -54,7 +60,7 @@ class exports.MucSignalingPeer extends SignalingPeer
   send: (event, data={}) ->
     return @channel.send({
       type: 'to'
-      peer: @peer_id
+      peer: @id
       event: event
       data: data
     })
@@ -85,7 +91,7 @@ class exports.MucSignalingPeer extends SignalingPeer
 #       "status": { .. status .. }
 #     }
 #
-#     // send message to a peer. will be received as 'to'
+#     // send message to a peer. will be received as 'from'
 #     {
 #       "type": "to",
 #       "peer": "peer_id",
@@ -98,6 +104,7 @@ class exports.MucSignalingPeer extends SignalingPeer
 #     // joined the room. is the response to 'join'
 #     {
 #       "type": "joined",
+#       "id": "own_id",
 #       "peers": {
 #         "peer_id": { .. status .. }
 #       }
@@ -141,6 +148,12 @@ class exports.MucSignalingPeer extends SignalingPeer
 ###
 class exports.MucSignaling extends Signaling
 
+  ###*
+  # The id of the local peer. Only available after joining.
+  # @property id
+  # @type String
+  ###
+
   constructor: (@channel) ->
     @status = {}
 
@@ -164,6 +177,8 @@ class exports.MucSignaling extends Signaling
           for peer_id, status of data.peers
             peer = new exports.MucSignalingPeer(@channel, peer_id, status, false)
             @emit('peer_joined', peer)
+
+          @id = data.id
 
           join_d.resolve()
 
@@ -193,7 +208,7 @@ class exports.MucSignaling extends Signaling
     @status = status
 
     if @connect_p
-      @connect_p.then () ->
+      @connect_p.then () =>
         return @channel.send({
           type: 'status'
           status: status

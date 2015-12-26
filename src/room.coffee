@@ -35,6 +35,18 @@ class exports.Room extends EventEmitter
   # @event closed
   ###
 
+  ###*
+  # The underlying signaling implementation as provided in constructor
+  # @property signaling
+  # @type rtc.signaling.Signaling
+  ###
+
+  ###*
+  # The local peer
+  # @property local
+  # @type rtc.LocalPeer
+  ###
+
   constructor: (@signaling, @options={}) ->
     # turn signaling into acctual signaling if needed
     if typeof @signaling == 'string' or @signaling instanceof String
@@ -42,6 +54,11 @@ class exports.Room extends EventEmitter
       @signaling = new MucSignaling(channel)
 
     @local = @options.local || new LocalPeer()
+
+    @signaling.setStatus(@local._status)
+
+    @local.on 'status_changed', () =>
+      @signaling.setStatus(@local._status)
 
     @signaling.on 'peer_joined', (signaling_peer) =>
       pc = new PeerConnection(signaling_peer.first, @options)

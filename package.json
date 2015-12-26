@@ -5,12 +5,12 @@
   "license": "AGPL-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/innovailable/innovailable/rtc-lib.git"
+    "url": "https://github.com/innovailable/rtc-lib.git"
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive"
   },
-  "version": "0.0.1",
+  "version": "0.0.2",
   "dependencies": {
     "es6-promise": "^3.0.2"
   },

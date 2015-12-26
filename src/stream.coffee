@@ -95,7 +95,11 @@ class exports.Stream
   # @method stop
   ###
   stop: () ->
-    stream.stop()
+    if @stream.getTracks?
+      for track in @stream.getTracks()
+        track.stop()
+    else
+      @stream.stop()
 
 
   ###*

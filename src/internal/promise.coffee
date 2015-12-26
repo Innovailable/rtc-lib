@@ -48,3 +48,19 @@ class exports.Deferred
     @promise = new exports.Promise (resolve, reject) =>
       @resolve = resolve
       @reject = reject
+
+
+###*
+# Adds a timeout to a promise. The promise will be rejected if timeout is
+# reached. It will act like the underlying promise if it is resolved or
+# rejected before the timeout is reached.
+# @param {Promse} promise The underlying promise
+# @param {number} time Timeout in ms
+# @return {Promise} Promise acting like the underlying promise or timeout
+###
+exports.timeout = (promise, time) ->
+  new Promise (resolve, reject) ->
+    promise.then(resolve, reject)
+    setTimeout () ->
+      reject(new Error('Operation timed out'))
+    , time
