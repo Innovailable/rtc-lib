@@ -40,7 +40,7 @@ class Calling extends EventEmitter
             else
               answer(undefined, msg.data)
 
-        when 'invited'
+        when 'invite_incoming'
           if not msg.handle? or not msg.user? or not msg.status? or not msg.data?
             console.log("Invalid message")
             return
@@ -72,7 +72,7 @@ class Calling extends EventEmitter
     # uses callback to avoid race conditions with promises
     return new Promise (resolve, reject) =>
       @request {
-        type: 'subscribe'
+        type: 'ns_subscribe'
         namespace: nsid
       }, (err, data) =>
         if err?
@@ -91,22 +91,22 @@ class Calling extends EventEmitter
 
   register: (namespace) ->
     return @request({
-      type: 'register'
+      type: 'ns_user_register'
       namespace: namespace
     })
 
 
   unregister: (namespace) ->
     return @request({
-      type: 'unregister'
+      type: 'ns_user_unregister'
       namespace: namespace
     })
 
 
-  join: (room) ->
+  room: (room) ->
     return new CallingRoom @, (status, cb) =>
       @request({
-        type: 'join'
+        type: 'room_join'
         room: room
         status: status
       }, cb)
@@ -123,20 +123,21 @@ class CallingNamespace extends EventEmitter
 
   constructor: (@calling, @id) ->
     @users = {}
+    @rooms = {}
 
     message_handler = (msg) =>
       if msg.namespace != @id
         return
 
       switch msg.type
-        when 'user_registered'
+        when 'ns_user_add'
           if not msg.user? or not msg.status?
             console.log('Invalid message')
             return
 
           @addUser(msg.user, msg.status)
 
-        when 'user_status'
+        when 'ns_user_update'
           if not msg.user? or not msg.status?
             console.log('Invalid message')
             return
@@ -150,7 +151,7 @@ class CallingNamespace extends EventEmitter
           user.status = msg.status
           user.emit('status_changed', user.status)
 
-        when 'user_left'
+        when 'ns_user_rm'
           if not msg.user?
             console.log('Invalid message')
             return
@@ -165,6 +166,87 @@ class CallingNamespace extends EventEmitter
           @emit('user_left', user)
           delete @users[msg.user]
 
+        when 'ns_room_add'
+          if not msg.room? or not msg.status? or not msg.peers?
+            console.log('Invalid message')
+            return
+
+          @addRoom(msg.room, msg.status, msg.peers)
+
+        when 'ns_room_update'
+          if not msg.room? or not msg.status?
+            console.log('Invalid message')
+            return
+
+          room = @rooms[msg.room]
+
+          if not rooms?
+            console.log('Invalid room')
+            return
+
+          room.status = msg.status
+          room.emit('status_changed', room.status)
+
+        when 'ns_room_rm'
+          if not msg.room?
+            console.log('Invalid message')
+            return
+
+          room = @rooms[msg.room]
+
+          if not rooms?
+            console.log('Invalid room')
+            return
+
+          user.emit('closed')
+          delete @rooms[msg.room]
+
+        when 'ns_room_peer_add'
+          if not msg.room? or not msg.user? or not msg.status? or not msg.pending?
+            console.log('Invalid message')
+            return
+
+          room = @rooms[msg.room]
+
+          if not rooms?
+            console.log('Invalid room')
+            return
+
+          room.addPeer(msg.user, msg.status, msg.pending)
+
+        when 'ns_room_peer_update'
+          if not msg.room? or not msg.user?
+            console.log('Invalid message')
+            return
+
+          peer = @rooms[msg.room]?[msg.user]
+
+          if not peer?
+            console.log('Invalid peer')
+            return
+
+          if msg.status?
+            peer.status = msg.status
+            peer.emit('status_changed', peer.status)
+
+          if msg.pending? and msg.pending == false
+            peer.pending = false
+            peer.accepted_d.resolve()
+
+        when 'ns_room_peer_rm'
+          if not msg.room? or not msg.user?
+            console.log('Invalid message')
+            return
+
+          peer = @rooms[msg.room]?[msg.user]
+
+          if not peer?
+            console.log('Invalid peer')
+            return
+
+          peer.emit('left')
+          delete @rooms[msg.room][msg.user]
+
     @calling.channel.on('message', message_handler)
 
     @on 'unsubscribed', () =>
@@ -172,16 +254,23 @@ class CallingNamespace extends EventEmitter
 
 
   addUser: (id, status) ->
-    user = new CallingUser(id, status)
+    user = new CallingNamespaceUser(id, status)
     @users[id] = user
     @emit('user_registered', user)
     return user
 
 
+  addRoom: (id, status, peers) ->
+    room = new CallingNamespaceRoom(id, status)
+    @rooms[id] = room
+    @emit('room_registered', room)
+    return room
+
+
   unsubscribe: () ->
     return new Promise (resolve, reject) =>
       @calling.request {
-        type: 'unsubscribe'
+        type: 'ns_unsubscribe'
         namespace: @id
       }, (err) =>
         if err?
@@ -197,9 +286,38 @@ class CallingNamespace extends EventEmitter
           resolve()
 
 
-class CallingUser extends EventEmitter
+class CallingNamespaceUser extends EventEmitter
 
   constructor: (@id, @status) ->
+
+
+class CallingNamespaceRoom extends EventEmitter
+
+  constructor: (@id, @status) ->
+    @peers = {}
+
+
+  addPeer: (id, status, pending) ->
+    peer = new CallingNamespaceRoomPeer(id, status, pending)
+    @peers[id] = peer
+    @emit('peer_joined', peer)
+    return peer
+
+
+class CallingNamespaceRoomPeer extends EventEmitter
+
+  constructor: (@id, @status, @pending) ->
+    @accepted_d = new Deferred()
+
+    if not @pending
+      @accepted_d.resolve()
+
+    @on 'left', () =>
+      @accepted_d.reject("Peer left")
+
+
+  accepted: () ->
+    return @accepted_d.promise
 
 
 class CallingRoom extends EventEmitter
@@ -213,7 +331,7 @@ class CallingRoom extends EventEmitter
         return
 
       switch msg.type
-        when 'room_status'
+        when 'room_update'
           if not msg.status?
             console.log("Invalid message")
             return
@@ -221,28 +339,14 @@ class CallingRoom extends EventEmitter
           @status = msg.status
           @emit('status_changed', @status)
 
-        when 'peer_joined'
+        when 'room_peer_add'
           if not msg.user? or not msg.pending? or not msg.status?
             console.log("Invalid message")
             return
 
           @addPeer(msg.user, msg.status, msg.pending, true)
 
-        when 'peer_accepted'
-          if not msg.user?
-            console.log("Invalid message")
-            return
-
-          peer = @peers[msg.user]
-
-          if not peer?
-            console.log("Unknown peer accepted")
-            return
-
-          peer.pending = false
-          peer.accepted_d.resolve()
-
-        when 'peer_left'
+        when 'room_peer_rm'
           if not msg.user?
             console.log("Invalid message")
             return
@@ -258,8 +362,8 @@ class CallingRoom extends EventEmitter
 
           delete @peers[msg.user]
 
-        when 'peer_status'
-          if not msg.user? or not msg.status?
+        when 'room_peer_update'
+          if not msg.user?
             console.log("Invalid message")
             return
 
@@ -269,10 +373,16 @@ class CallingRoom extends EventEmitter
             console.log("Unknown peer accepted")
             return
 
-          peer.status = msg.status
-          peer.emit('status_changed', peer.status)
+          if msg.status?
+            peer.status = msg.status
+            peer.emit('status_changed', peer.status)
 
-        when 'from'
+          if msg.pending? and msg.pending == false
+            peer.pending = false
+            peer.accepted_d.resolve()
+
+
+        when 'room_peer_from'
           if not msg.user? or not msg.event? or not msg.data?
             console.log("Invalid message")
             return
@@ -314,7 +424,7 @@ class CallingRoom extends EventEmitter
 
 
   addPeer: (id, status, pending, first) ->
-    peer = new CallingPeer(@, id, status, pending, first)
+    peer = new CallingRoomPeer(@, id, status, pending, first)
     @peers[id] = peer
     @emit('peer_joined', peer)
     return peer
@@ -323,7 +433,7 @@ class CallingRoom extends EventEmitter
   leave: () ->
     return new Promise (resolve, reject) =>
       @calling.request {
-        type: 'leave'
+        type: 'room_leave'
         room: @id
       }, (err) =>
         @emit('left')
@@ -340,7 +450,7 @@ class CallingRoom extends EventEmitter
 
     if @connect_p?
       return @calling.request({
-        type: 'peer_status'
+        type: 'room_peer_status'
         room: @id
         status: status
       })
@@ -351,7 +461,7 @@ class CallingRoom extends EventEmitter
   invite: (user, data={}) ->
     return new Promise (resolve, reject) =>
       @calling.request {
-        type: 'invite'
+        type: 'invite_send'
         room: @id
         user: user.id
         data: data
@@ -367,7 +477,7 @@ class CallingRoom extends EventEmitter
           resolve(invitation)
 
 
-class CallingPeer extends EventEmitter
+class CallingRoomPeer extends EventEmitter
 
   constructor: (@room, @id, @status, @pending, @first) ->
     @accepted_d = new Deferred()
@@ -384,7 +494,7 @@ class CallingPeer extends EventEmitter
 
   send: (event, data) ->
     return @room.calling.request({
-      type: 'to'
+      type: 'room_peer_to'
       room: @room.id
       user: @id
       event: event
@@ -419,7 +529,7 @@ class CallingInInvitation extends EventEmitter
     @emit('handled')
     return new CallingRoom @calling, (status, cb) =>
       @calling.request({
-        type: 'accept'
+        type: 'ionvite_accept'
         handle: @handle
         status: status
       }, cb)
@@ -475,9 +585,11 @@ class CallingOutInvitation
 module.exports = {
   Calling: Calling
   CallingNamespace: CallingNamespace
-  CallingUser: CallingUser
+  CallingNamespaceUser: CallingNamespaceUser
+  CallingNamespaceRoom: CallingNamespaceRoom
+  CallingNamespaceRoomPeer: CallingNamespaceRoomPeer
   CallingRoom: CallingRoom
-  CallingPeer: CallingPeer
+  CallingRoomPeer: CallingRoomPeer
   CallingInInvitation: CallingInInvitation
   CallingOutInvitation: CallingOutInvitation
 }

@@ -147,7 +147,7 @@ describe 'CallingSignaling', () ->
         promise = calling.register('test')
 
         msg_compare(channel.sent[0], {
-          type: 'register'
+          type: 'ns_user_register'
           namespace: 'test'
         })
 
@@ -159,7 +159,7 @@ describe 'CallingSignaling', () ->
         promise = calling.unregister('test')
 
         msg_compare(channel.sent[0], {
-          type: 'unregister'
+          type: 'ns_user_unregister'
           namespace: 'test'
         })
 
@@ -173,7 +173,7 @@ describe 'CallingSignaling', () ->
         calling.subscribe('test')
 
         msg_compare(channel.sent[0], {
-          type: 'subscribe'
+          type: 'ns_subscribe'
           namespace: 'test'
         })
 
@@ -191,11 +191,11 @@ describe 'CallingSignaling', () ->
     describe 'join', () ->
 
       it 'should send join command on connect on room', () ->
-        room = calling.join('test')
+        room = calling.room('test')
         promise = room.connect()
 
         msg_compare(channel.sent[0], {
-          type: 'join'
+          type: 'room_join'
           room: 'test'
           status: {}
         })
@@ -233,7 +233,7 @@ describe 'CallingSignaling', () ->
           done()
 
         channel.receive({
-          type: 'invited'
+          type: 'invite_incoming'
           handle: 42
           user: "1234"
           status: {a: 'b'}
@@ -260,7 +260,7 @@ describe 'CallingSignaling', () ->
         p = namespace.unsubscribe()
 
         msg_compare(channel.sent[0], {
-          type: 'unsubscribe'
+          type: 'ns_unsubscribe'
           namespace: 'test'
         })
 
@@ -290,7 +290,7 @@ describe 'CallingSignaling', () ->
           done()
 
         channel.receive({
-          type: 'user_registered'
+          type: 'ns_user_add'
           namespace: 'test'
           user: '1234'
           status: {a: 'b'}
@@ -304,7 +304,7 @@ describe 'CallingSignaling', () ->
           done()
 
         channel.receive({
-          type: 'user_left'
+          type: 'ns_user_rm'
           namespace: 'test'
           user: 'a'
         })
@@ -316,7 +316,7 @@ describe 'CallingSignaling', () ->
           done()
 
         channel.receive({
-          type: 'user_left'
+          type: 'ns_user_rm'
           namespace: 'test'
           user: 'a'
         })
@@ -344,7 +344,7 @@ describe 'CallingSignaling', () ->
           done()
 
         channel.receive({
-          type: 'user_status'
+          type: 'ns_user_update'
           namespace: 'test'
           user: 'a'
           status: {a: 'b'}
@@ -369,7 +369,7 @@ describe 'CallingSignaling', () ->
   describe 'Room', () ->
 
     get_room = (peers={}, status={}) ->
-      room = calling.join('test')
+      room = calling.room('test')
       promise = room.connect()
 
       channel.answer({
@@ -413,7 +413,7 @@ describe 'CallingSignaling', () ->
 
 
     it 'should emit events for initial peers', (done) ->
-      room = calling.join('test')
+      room = calling.room('test')
 
       room.on 'peer_joined', (peer) ->
         peer.id.should.equal('a')
@@ -446,7 +446,7 @@ describe 'CallingSignaling', () ->
             resolve()
 
           channel.receive({
-            type: 'peer_joined'
+            type: 'room_peer_add'
             room: 'test'
             user: 'a'
             pending: true
@@ -459,7 +459,7 @@ describe 'CallingSignaling', () ->
         room.peers.should.be.empty
 
         channel.receive({
-          type: 'peer_joined'
+          type: 'room_peer_add'
           room: 'test'
           user: 'a'
           pending: true
@@ -475,7 +475,7 @@ describe 'CallingSignaling', () ->
     it 'should resolve `accepted()` on peer when accepting', () ->
       return get_room().then (room) ->
         channel.receive({
-          type: 'peer_joined'
+          type: 'room_peer_add'
           room: 'test'
           user: 'a'
           pending: true
@@ -487,9 +487,10 @@ describe 'CallingSignaling', () ->
         user.pending.should.be.true
 
         channel.receive({
-          type: 'peer_accepted'
+          type: 'room_peer_update'
           room: 'test'
           user: 'a'
+          pending: false
         })
 
         return user.accepted().then () ->
@@ -499,7 +500,7 @@ describe 'CallingSignaling', () ->
     it 'should resolve `accepted()` on peer if never pending', () ->
       return get_room().then (room) ->
         channel.receive({
-          type: 'peer_joined'
+          type: 'room_peer_add'
           room: 'test'
           user: 'a'
           pending: false
@@ -521,7 +522,7 @@ describe 'CallingSignaling', () ->
         promise = room.peers['a'].accepted()
 
         channel.receive({
-          type: 'peer_left'
+          type: 'room_peer_rm'
           room: 'test'
           user: 'a'
         })
@@ -556,7 +557,7 @@ describe 'CallingSignaling', () ->
         room.status.should.be.empty
 
         channel.receive({
-          type: 'room_status'
+          type: 'room_update'
           room: 'test'
           status: {a: 'b'}
         })
@@ -569,7 +570,7 @@ describe 'CallingSignaling', () ->
         room.leave()
 
         msg_compare(channel.sent[0], {
-          type: 'leave'
+          type: 'room_leave'
           room: 'test'
         })
 
@@ -638,7 +639,7 @@ describe 'CallingSignaling', () ->
             resolve()
 
           channel.receive({
-            type: 'peer_status'
+            type: 'room_peer_update'
             room: 'test'
             user: 'a'
             status: {a: 'b'}
@@ -662,7 +663,7 @@ describe 'CallingSignaling', () ->
             resolve()
 
           channel.receive({
-            type: 'from'
+            type: 'room_peer_from'
             room: 'test'
             user: 'a'
             event: 'ev'
@@ -684,7 +685,7 @@ describe 'CallingSignaling', () ->
         peer.send('ev', {a: 'b'})
 
         msg_compare(channel.sent[0], {
-          type: 'to'
+          type: 'room_peer_to'
           room: 'test'
           user: 'a'
           event: 'ev'
