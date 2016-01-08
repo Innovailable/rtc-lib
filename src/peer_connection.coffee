@@ -56,6 +56,7 @@ class exports.PeerConnection extends EventEmitter
 
   constructor: (@offering, @options) ->
     ice_servers = []
+    @no_gc_bugfix = []
 
     if @options.stun?
       ice_servers.push({url: @options.stun})
@@ -248,6 +249,12 @@ class exports.PeerConnection extends EventEmitter
   addDataChannel: (name, options) ->
     if @offering
       channel = @pc.createDataChannel(name, options)
+
+      # Don't let the channel be garbage collected
+      # We only pass it on in onopen callback so the gc is not clever enough to let this live ...
+      # https://code.google.com/p/chromium/issues/detail?id=405545
+      # https://bugzilla.mozilla.org/show_bug.cgi?id=964092
+      @no_gc_bugfix.push(channel)
 
       channel.onopen = () =>
         @emit('data_channel_ready', new DataChannel(channel))
