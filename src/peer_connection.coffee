@@ -68,6 +68,8 @@ class exports.PeerConnection extends EventEmitter
     @connect_d = new Deferred()
     @connected = false
 
+    @connect_d.promise.catch(() ->)
+
     @signaling_pending = []
 
     # PeerConnection events
@@ -276,7 +278,7 @@ class exports.PeerConnection extends EventEmitter
 
       @connected = true
 
-    return @connect_d.promise
+    return Promise.resolve(@connect_d.promise)
 
 
   ###*
