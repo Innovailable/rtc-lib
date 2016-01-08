@@ -125,7 +125,7 @@ class exports.PeerConnection extends EventEmitter
   # @param {Object} desc The candidate
   ###
   addIceCandidate: (desc) ->
-    if desc.candidate?
+    if desc?.candidate?
       candidate = new compat.IceCandidate(desc)
       @pc.addIceCandidate(candidate)
     else
