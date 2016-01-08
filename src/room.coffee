@@ -31,6 +31,19 @@ class exports.Room extends EventEmitter
   ###
 
   ###*
+  # A peer left the room.
+  # @event peer_left
+  # @param {rtc.RemotePeer} peer The peer which left
+  ###
+
+  ###*
+  # A peer changed its status.
+  # @event peer_status_changed
+  # @param {rtc.RemotePeer} peer The peer which changed its status
+  # @param {Object} status The new status
+  ###
+
+  ###*
   # The connection to the room was closed
   # @event closed
   ###
@@ -63,6 +76,13 @@ class exports.Room extends EventEmitter
     @signaling.on 'peer_joined', (signaling_peer) =>
       pc = new PeerConnection(signaling_peer.first, @options)
       peer = new RemotePeer(pc, signaling_peer, @local, @options)
+
+      peer.on 'status_changed', (status) =>
+        @emit('peer_status_changed', peer, status)
+
+      peer.on 'left', () =>
+        delete @peers[signaling_peer.id]
+        @emit('peer_left', peer)
 
       @peers[signaling_peer.id] = peer
       @emit('peer_joined', peer)
