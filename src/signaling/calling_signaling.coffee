@@ -80,11 +80,11 @@ class Calling extends EventEmitter
         else
           namespace = new CallingNamespace(@, nsid)
 
-          namespace.on 'user_registered', (user) =>
-            @emit('user_registered', user, namespace)
-
-          for id, status of data
+          for id, status of data.users
             namespace.addUser(id, status)
+
+          for id, room of data.rooms
+            namespace.addRoom(id, room.status, room.peers)
 
           resolve(namespace)
 
@@ -149,6 +149,8 @@ class CallingNamespace extends EventEmitter
             return
 
           user.status = msg.status
+          @emit('user_changed', user)
+          @emit('user_status_changed', user, user.status)
           user.emit('status_changed', user.status)
 
         when 'ns_user_rm'
@@ -162,9 +164,11 @@ class CallingNamespace extends EventEmitter
             console.log('Unknown user leaving')
             return
 
-          user.emit('left')
-          @emit('user_left', user)
           delete @users[msg.user]
+
+          @emit('user_changed', user)
+          @emit('user_left', user)
+          user.emit('left')
 
         when 'ns_room_add'
           if not msg.room? or not msg.status? or not msg.peers?
@@ -180,11 +184,14 @@ class CallingNamespace extends EventEmitter
 
           room = @rooms[msg.room]
 
-          if not rooms?
+          if not room?
             console.log('Invalid room')
             return
 
           room.status = msg.status
+
+          @emit('room_changed', room)
+          @emit('room_status_changed', room, room.status)
           room.emit('status_changed', room.status)
 
         when 'ns_room_rm'
@@ -194,12 +201,15 @@ class CallingNamespace extends EventEmitter
 
           room = @rooms[msg.room]
 
-          if not rooms?
+          if not room?
             console.log('Invalid room')
             return
 
-          user.emit('closed')
           delete @rooms[msg.room]
+
+          @emit('room_changed', room)
+          @emit('room_closed')
+          room.emit('closed')
 
         when 'ns_room_peer_add'
           if not msg.room? or not msg.user? or not msg.status? or not msg.pending?
@@ -208,18 +218,22 @@ class CallingNamespace extends EventEmitter
 
           room = @rooms[msg.room]
 
-          if not rooms?
+          if not room?
             console.log('Invalid room')
             return
 
-          room.addPeer(msg.user, msg.status, msg.pending)
+          peer = room.addPeer(msg.user, msg.status, msg.pending)
+
+          @emit('room_changed', room)
+          @emit('room_peer_joined', room, peer)
 
         when 'ns_room_peer_update'
           if not msg.room? or not msg.user?
             console.log('Invalid message')
             return
 
-          peer = @rooms[msg.room]?[msg.user]
+          room = @rooms[msg.room]
+          peer = room?.peers[msg.user]
 
           if not peer?
             console.log('Invalid peer')
@@ -227,25 +241,36 @@ class CallingNamespace extends EventEmitter
 
           if msg.status?
             peer.status = msg.status
+
+            @emit('room_changed', room)
+            @emit('room_peer_status_changed', room, peer, peer.status)
             peer.emit('status_changed', peer.status)
 
           if msg.pending? and msg.pending == false
             peer.pending = false
             peer.accepted_d.resolve()
 
+            @emit('room_changed', room)
+            @emit('peer_accepted', peer)
+            peer.emit('accepted')
+
         when 'ns_room_peer_rm'
           if not msg.room? or not msg.user?
             console.log('Invalid message')
             return
 
-          peer = @rooms[msg.room]?[msg.user]
+          room = @rooms[msg.room]
+          peer = room?.peers[msg.user]
 
           if not peer?
             console.log('Invalid peer')
             return
 
+          delete @rooms[msg.room].peers[msg.user]
+
+          @emit('room_changed', room)
+          @emit('room_peer_left', room, peer)
           peer.emit('left')
-          delete @rooms[msg.room][msg.user]
 
     @calling.channel.on('message', message_handler)
 
@@ -256,13 +281,19 @@ class CallingNamespace extends EventEmitter
   addUser: (id, status) ->
     user = new CallingNamespaceUser(id, status)
     @users[id] = user
+    @emit('user_changed', user)
     @emit('user_registered', user)
     return user
 
 
   addRoom: (id, status, peers) ->
     room = new CallingNamespaceRoom(id, status)
+
+    for peer_id, peer of peers
+      room.addPeer(peer_id, peer.status, peer.pending)
+
     @rooms[id] = room
+    @emit('room_changed', room)
     @emit('room_registered', room)
     return room
 
@@ -288,7 +319,7 @@ class CallingNamespace extends EventEmitter
 
 class CallingNamespaceUser extends EventEmitter
 
-  constructor: (@id, @status) ->
+  constructor: (@id, @status, @pending) ->
 
 
 class CallingNamespaceRoom extends EventEmitter
@@ -347,6 +378,7 @@ class CallingRoom extends EventEmitter
           @addPeer(msg.user, msg.status, msg.pending, true)
 
         when 'room_peer_rm'
+          console.log 'removing'
           if not msg.user?
             console.log("Invalid message")
             return
@@ -357,10 +389,12 @@ class CallingRoom extends EventEmitter
             console.log("Unknown peer accepted")
             return
 
-          peer.accepted_d.reject("User left")
-          peer.emit('left')
-
           delete @peers[msg.user]
+          peer.accepted_d.reject("User left")
+          console.log 'removed', @peers
+
+          @emit('peer_left', peer)
+          peer.emit('left')
 
         when 'room_peer_update'
           if not msg.user?
@@ -375,16 +409,21 @@ class CallingRoom extends EventEmitter
 
           if msg.status?
             peer.status = msg.status
+
+            @emit('peer_status_changed', peer, peer.status)
             peer.emit('status_changed', peer.status)
 
           if msg.pending? and msg.pending == false
             peer.pending = false
             peer.accepted_d.resolve()
 
+            @emit('peer_accepted')
+            peer.emit('accepted')
+
 
         when 'room_peer_from'
-          if not msg.user? or not msg.event? or not msg.data?
-            console.log("Invalid message")
+          if not msg.user? or not msg.event?
+            console.log("Invalid message", msg)
             return
 
           peer = @peers[msg.user]
@@ -393,6 +432,7 @@ class CallingRoom extends EventEmitter
             console.log("Unknown peer accepted")
             return
 
+          @emit('peer_left')
           peer.emit(msg.event, msg.data)
 
     @calling.channel.on('message', message_handler)
@@ -475,6 +515,60 @@ class CallingRoom extends EventEmitter
 
           invitation = new CallingOutInvitation(@calling, res.handle)
           resolve(invitation)
+
+
+  setRoomStatusSafe: (key, value, previous) ->
+    return new Promise (resolve, reject) =>
+      @calling.request {
+        type: 'room_status'
+        room: @id
+        key: key
+        value: value
+        check: true
+        previous: previous
+      }, (err) =>
+        if err
+          reject(err)
+          return
+
+        @status[key] = value
+        @emit('status_changed', @status)
+
+        resolve()
+
+
+  setRoomStatus: (key, value) ->
+    return new Promise (resolve, reject) =>
+      @calling.request {
+        type: 'room_status'
+        room: @id
+        key: key
+        value: value
+      }, (err) =>
+        if err
+          reject(err)
+          return
+
+        @status[key] = value
+        @emit('status_changed', @status)
+
+        resolve()
+
+
+  register: (namespace) ->
+    return @calling.request({
+      type: 'ns_room_register'
+      namespace: namespace
+      room: @id
+    })
+
+
+  unregister: (namespace, room) ->
+    return @calling.request({
+      type: 'ns_room_unregister'
+      namespace: namespace
+      room: @id
+    })
 
 
 class CallingRoomPeer extends EventEmitter
