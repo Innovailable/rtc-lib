@@ -24,4 +24,6 @@ extend(exports.internal, require('./internal/promise'))
 
 extend(exports.signaling, require('./signaling/web_socket_channel'))
 extend(exports.signaling, require('./signaling/palava_signaling'))
+extend(exports.signaling, require('./signaling/calling_signaling'))
+extend(exports.signaling, require('./signaling/muc_signaling'))
 
