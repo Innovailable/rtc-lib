@@ -114,3 +114,13 @@ class exports.LocalPeer extends Peer
   ###
   stream: (name=@DEFAULT_STREAM) ->
     return @streams[name]
+
+
+  ###*
+  # Checks whether the peer is the local peer. Returns always `true` on this
+  # class.
+  # @method isLocal
+  # @return {Boolean} Returns `true`
+  ###
+  isLocal: () ->
+    return true

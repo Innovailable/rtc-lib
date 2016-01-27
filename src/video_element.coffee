@@ -37,7 +37,9 @@ class exports.MediaDomElement
       @dom.play()
 
     else if data instanceof Peer
-      # TODO: auto mute on local
+      if data.isLocal()
+        @mute()
+
       @attach(data.stream())
 
     else if data?.then?

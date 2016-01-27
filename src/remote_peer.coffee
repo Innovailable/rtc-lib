@@ -284,3 +284,13 @@ class exports.RemotePeer extends Peer
     @private_channels[name] = desc
 
     return @channel(name)
+
+
+  ###*
+  # Checks whether the peer is the local peer. Returns always `false` on this
+  # class.
+  # @method isLocal
+  # @return {Boolean} Returns `false`
+  ###
+  isLocal: () ->
+    return false
