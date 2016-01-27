@@ -75,7 +75,7 @@ class exports.Room extends EventEmitter
 
     @signaling.on 'peer_joined', (signaling_peer) =>
       pc = new PeerConnection(signaling_peer.first, @options)
-      peer = new RemotePeer(pc, signaling_peer, @local, @options)
+      peer = @createPeer(pc, signaling_peer)
 
       peer.on 'status_changed', (status) =>
         @emit('peer_status_changed', peer, status)
@@ -120,3 +120,14 @@ class exports.Room extends EventEmitter
   destroy: () ->
     # TODO ...
     return @signaling.leave()
+
+
+  ###*
+  # Creates a remote peer. Overwrite to use your own class for peers.
+  # @private
+  # @method create_peer
+  # @param {rtc.PeerConnection} pc The PeerConnection to the peer
+  # @param {rtc.SignalingPeer} signaling_peer The signaling connection to the peer
+  ###
+  createPeer: (pc, signaling_peer) ->
+    return new RemotePeer(pc, signaling_peer, @local, @options)
