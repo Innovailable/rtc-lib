@@ -104,6 +104,14 @@ class exports.StreamCollection extends EventEmitter
   resolve: (stream) ->
     id = stream.id()
 
+    # streams from Chrome to Firefox are coming in with id set to 'default' ...
+    if id == 'default'
+      if Object.keys(@streams).length == 1 and Object.keys(@_waiting).length == 1
+        console.log("Working around incompatibility between Firefox and Chrome concerning stream identification")
+        id = Object.keys(@_waiting)[0]
+      else
+        console.log("Unable to work around incompatibility between Firefox and Chrome concerning stream identification")
+
     if @_waiting[id]?
       # stream is expected
 
