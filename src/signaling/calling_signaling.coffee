@@ -1,10 +1,13 @@
 {EventEmitter} = require('events')
 {Promise, Deferred} = require('../internal/promise')
+extend = require('extend')
 
+{Room} = require('../room')
+{RemotePeer} = require('../remote_peer')
 
 class Calling extends EventEmitter
 
-  constructor: (@channel) ->
+  constructor: (@channel, @room_options) ->
     @next_tid = 0
     @answers = {}
 
@@ -12,6 +15,8 @@ class Calling extends EventEmitter
     @hello_p = hello_d.promise
 
     @channel.on 'message', (msg) =>
+      @resetPing()
+
       switch msg.type
         when 'hello'
           @id = msg.id
@@ -41,16 +46,28 @@ class Calling extends EventEmitter
               answer(undefined, msg.data)
 
         when 'invite_incoming'
-          if not msg.handle? or not msg.user? or not msg.status? or not msg.data?
+          if not msg.handle? or not msg.sender? or not msg.room or not msg.status? or not msg.peers? or not msg.data?
             console.log("Invalid message")
             return
 
-          invitation = new CallingInInvitation(@, msg.handle, msg.user, msg.status, msg.data)
-          @emit('invitation', invitation)
+          invitation = new CallingInInvitation(@, msg.handle)
+          room = new CallingInvitationRoom(invitation, @room_options, msg.sender, msg.data)
+          room.signaling.init(msg)
+
+          @emit('invitation', room)
+
+    @channel.on 'closed', () =>
+      @emit('closed')
+
+      if @ping_interval
+        clearInterval(@ping_interval)
+        delete @ping_interval
 
 
   connect: () ->
     @channel.connect().then () =>
+      @resetPing()
+
       return @hello_p
 
 
@@ -58,6 +75,7 @@ class Calling extends EventEmitter
     msg.tid = @next_tid++
 
     @channel.send(msg)
+    @resetPing()
 
     if cb?
       @answers[msg.tid] = cb
@@ -66,6 +84,22 @@ class Calling extends EventEmitter
       defer = new Deferred()
       @answers[msg.tid] = defer
       return defer.promise
+
+
+  ping: () ->
+    return @request({
+      type: 'ping'
+    })
+
+
+  resetPing: () ->
+    if @ping_timeout
+      clearTimeout(@ping_timeout)
+
+    @ping_timeout = setTimeout () =>
+      @ping()
+      @resetPing()
+    , 2 * 60 * 1000
 
 
   subscribe: (nsid) ->
@@ -103,8 +137,13 @@ class Calling extends EventEmitter
     })
 
 
-  room: (room) ->
-    return new CallingRoom @, (status, cb) =>
+  room: (room, options) ->
+    signaling = @room_signaling(room)
+    return new CallingRoom(signaling, options || @room_options)
+
+
+  room_signaling: (room) ->
+    return new CallingSignaling @, (status, cb) =>
       @request({
         type: 'room_join'
         room: room
@@ -117,6 +156,10 @@ class Calling extends EventEmitter
       type: 'status'
       status: status
     })
+
+
+  close: () ->
+    @channel.close()
 
 
 class CallingNamespace extends EventEmitter
@@ -351,11 +394,13 @@ class CallingNamespaceRoomPeer extends EventEmitter
     return @accepted_d.promise
 
 
-class CallingRoom extends EventEmitter
+class CallingSignaling extends EventEmitter
 
   constructor: (@calling, @connect_fun) ->
     @peer_status = {}
     @peers = {}
+
+    @initialized = false
 
     message_handler = (msg) =>
       if msg.room != @id
@@ -441,6 +486,23 @@ class CallingRoom extends EventEmitter
       @calling.channel.removeListener('message', message_handler)
 
 
+  init: (data) ->
+    if @initialized
+      throw new Error("Room is already initialized")
+
+    if not data.room? or not data.peers? or not data.status?
+      console.log(data)
+      throw new Error("Invalid initialization data")
+
+    @id = data.room
+    @status = data.status
+
+    for user, entry of data.peers
+      @addPeer(user, entry.status, entry.pending, false)
+
+    @initialized = true
+
+
   connect: () ->
     if not @connect_p?
       @connect_p = new Promise (resolve, reject) =>
@@ -448,15 +510,12 @@ class CallingRoom extends EventEmitter
           if err?
             reject(err)
           else
-            if not res.room? or not res.peers?
-              reject(new Error("Invalid response from server"))
+            if res?
+              @init(res)
+
+            if not @initialized
+              reject(new Error("Missing information from connect response"))
               return
-
-            @id = res.room
-            @status = res.status
-
-            for user, data of res.peers
-              @addPeer(user, data.status, data.pending, false)
 
             resolve()
 
@@ -464,7 +523,7 @@ class CallingRoom extends EventEmitter
 
 
   addPeer: (id, status, pending, first) ->
-    peer = new CallingRoomPeer(@, id, status, pending, first)
+    peer = new CallingSignalingPeer(@, id, status, pending, first)
     @peers[id] = peer
     @emit('peer_joined', peer)
     return peer
@@ -513,7 +572,7 @@ class CallingRoom extends EventEmitter
             reject(new Error("Invalid response"))
             return
 
-          invitation = new CallingOutInvitation(@calling, res.handle)
+          invitation = new CallingOutInvitation(@calling, res.handle, user)
           resolve(invitation)
 
 
@@ -563,7 +622,7 @@ class CallingRoom extends EventEmitter
     })
 
 
-  unregister: (namespace, room) ->
+  unregister: (namespace) ->
     return @calling.request({
       type: 'ns_room_unregister'
       namespace: namespace
@@ -571,7 +630,7 @@ class CallingRoom extends EventEmitter
     })
 
 
-class CallingRoomPeer extends EventEmitter
+class CallingSignalingPeer extends EventEmitter
 
   constructor: (@room, @id, @status, @pending, @first) ->
     @accepted_d = new Deferred()
@@ -598,7 +657,7 @@ class CallingRoomPeer extends EventEmitter
 
 class CallingInInvitation extends EventEmitter
 
-  constructor: (@calling, @handle, @user, @status, @data) ->
+  constructor: (@calling, @handle, @sender, @data) ->
     @cancelled = false
 
     message_handler = (msg) =>
@@ -609,7 +668,7 @@ class CallingInInvitation extends EventEmitter
         when 'invite_cancelled'
           @cancelled = true
           @emit('cancelled')
-          @emit('handled')
+          @emit('handled', false)
 
     @calling.channel.on('message', message_handler)
 
@@ -618,29 +677,30 @@ class CallingInInvitation extends EventEmitter
 
     return
 
-  
-  accept: () ->
-    @emit('handled')
-    return new CallingRoom @calling, (status, cb) =>
+
+  signaling: () ->
+    return new CallingSignaling @calling, (status, cb) =>
+      @emit('handled', true)
       @calling.request({
-        type: 'ionvite_accept'
+        type: 'invite_accept'
         handle: @handle
         status: status
       }, cb)
 
 
   deny: () ->
-    @emit('handled')
+    @emit('handled', false)
     return @calling.request({
-      type: 'deny'
+      type: 'invite_deny'
       handle: @handle
     })
 
 
 class CallingOutInvitation
 
-  constructor: (@calling, @handle) ->
+  constructor: (@calling, @handle, @user) ->
     @defer = new Deferred()
+    @pending = true
 
     message_handler = (msg) =>
       if msg.handle != @handle
@@ -652,6 +712,7 @@ class CallingOutInvitation
             console.log("Invalid message")
             return
 
+          @pending = false
           @defer.resolve(msg.accepted)
 
     @calling.channel.on('message', message_handler)
@@ -669,6 +730,8 @@ class CallingOutInvitation
 
 
   cancel: () ->
+    @pending = false
+
     return @calling.request({
       type: 'invite_cancel'
       handle: @handle
@@ -676,14 +739,72 @@ class CallingOutInvitation
       @defer.reject(new Error("Invitation cancelled"))
       return
 
+
+class CallingRoom extends Room
+
+  constructor: (signaling, options) ->
+    options = extend({auto_connect: false}, options)
+    super(signaling, options)
+
+
+  createPeer: (pc, signaling) ->
+    return new CallingPeer(pc, signaling, @local, @options)
+
+
+  invite: (user) ->
+    return @signaling.invite(user)
+
+
+  register: (nsid) ->
+    @signaling.register(nsid)
+
+
+  unregister: (nsid) ->
+    @signaling.unregister(nsid)
+
+
+class CallingInvitationRoom extends CallingRoom
+
+
+  constructor: (@invitation, options, @sender_id, @data) ->
+    super(@invitation.signaling(), options)
+
+    @invitation.on 'cancelled', () =>
+      @emit('cancelled')
+
+    @invitation.on 'handled', (accepted) =>
+      @emit('handled', accepted)
+
+
+  sender: () ->
+    return @peers[@sender_id]
+
+
+  deny: () ->
+    return @invitation.deny()
+
+
+class CallingPeer extends RemotePeer
+
+  constructor: (pc, signaling, local, options) ->
+    super(pc, signaling, local, options)
+
+
+  connect: () ->
+    console.log('connecting ..')
+    return @signaling.accepted().then () =>
+      console.log('accepted ..')
+      return super()
+
+
 module.exports = {
   Calling: Calling
   CallingNamespace: CallingNamespace
   CallingNamespaceUser: CallingNamespaceUser
   CallingNamespaceRoom: CallingNamespaceRoom
   CallingNamespaceRoomPeer: CallingNamespaceRoomPeer
-  CallingRoom: CallingRoom
-  CallingRoomPeer: CallingRoomPeer
+  CallingSignaling: CallingSignaling
+  CallingSignalingPeer: CallingSignalingPeer
   CallingInInvitation: CallingInInvitation
   CallingOutInvitation: CallingOutInvitation
 }
