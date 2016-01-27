@@ -791,9 +791,7 @@ class CallingPeer extends RemotePeer
 
 
   connect: () ->
-    console.log('connecting ..')
     return @signaling.accepted().then () =>
-      console.log('accepted ..')
       return super()
 
 
