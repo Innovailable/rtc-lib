@@ -17,7 +17,7 @@ class exports.DataChannel extends EventEmitter
   ###*
   # A new messages was received. Triggers only after `connect()` was called
   # @event message
-  # @param data The data received
+  # @param {ArrayBuffer} data The data received
   ###
 
   ###*
@@ -32,6 +32,10 @@ class exports.DataChannel extends EventEmitter
     # buffer management
 
     @_send_buffer = []
+
+    # make sure we are using arraybuffer
+
+    @channel.binaryType = 'arraybuffer'
 
     # event handling
 
