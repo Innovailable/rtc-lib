@@ -1,4 +1,5 @@
 {compat} = require('./compat')
+{EventEmitter} = require('events')
 
 
 ###*
@@ -11,7 +12,15 @@
 # @constructor
 # @param {RTCDataStream} stream The native stream
 ###
-class exports.Stream
+class exports.Stream extends EventEmitter
+
+  ###*
+  # Emitted when tracks are muted or unmuted. Only triggered when changes are
+  # made through this objects mute functions.
+  # @event mute_changed
+  # @param {'audio' | 'video' | 'both'} type The type of tracks which changed
+  # @param {Boolean} muted `true` if tracks were muted, `false` if they were unmuted
+  ###
 
   constructor: (@stream) ->
 
@@ -45,18 +54,30 @@ class exports.Stream
     type = type.toLowerCase()
 
     if type == 'audio'
-      return @stream_p.then (stream) ->
-        return stream.getAudioTracks()
+      return @stream.getAudioTracks()
     else if type == 'video'
-      return @stream_p.then (stream) ->
-        return stream.getVideoTracks()
+      return @stream.getVideoTracks()
     else if type == 'both'
-      return @stream_p.then (stream) ->
-        video = stream.getVideoTracks()
-        vaudio = stream.getAudioTracks()
-        return video.concat(audio)
+      video = @stream.getVideoTracks()
+      vaudio = @stream.getAudioTracks()
+      return video.concat(audio)
     else
       throw new Error("Invalid stream part '" + type + "'")
+
+
+  ###*
+  # Checks whether a type of track is muted. If there are no tracks of the
+  # specified type they will be considered muted
+  # @param {'audio' | 'video' | 'both'} [type='audio'] The type of tracks
+  # @return {Boolean} Whether the tracks are muted
+  ###
+  muted: (type='audio') ->
+    tracks = @getTracks(type)
+
+    if tracks.length < 1
+      return true
+
+    return not tracks[0]?.enabled
 
 
   ###*
@@ -67,8 +88,10 @@ class exports.Stream
   # @return {Boolean} Whether the tracks were muted or unmuted
   ###
   mute: (muted=true, type='audio') ->
-    for track in getTracks(type)
+    for track in @getTracks(type)
       track.enabled = not muted
+
+    @emit('mute_changed', type, muted)
 
     return muted
 
@@ -80,12 +103,17 @@ class exports.Stream
   # @return {Boolean} Whether the tracks were muted or unmuted
   ###
   toggleMute: (type='audio') ->
-    tracks = getTracks(type)
+    tracks = @getTracks(type)
+
+    if tracks.length < 1
+      return true
 
     muted = not tracks[0]?.enabled
 
     for track in tracks
       track.enabled = not muted
+
+    @emit('mute_changed', type, muted)
 
     return muted
 
@@ -120,3 +148,4 @@ class exports.Stream
         resolve(new Stream(native_stream))
 
       compat.getUserMedia(config, success, reject)
+
