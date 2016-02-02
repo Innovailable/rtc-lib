@@ -131,6 +131,36 @@ class exports.Stream extends EventEmitter
 
 
   ###*
+  # Clones the stream. You can change both streams independently, for example
+  # mute tracks. You will have to `stop()` both streams individually when you
+  # are done.
+  #
+  # This is currently not supported in Firefox and expected to be implemented
+  # in version 47. Use `Stream.canClone()` to check whether cloning is supported by
+  # your browser.
+  #
+  # @method clone
+  # @return {rtc.Stream} A clone of the stream
+  ###
+  clone: () ->
+    if not @stream.clone?
+      throw new Error("Your browser does not support stream cloning. Firefox is expected to implement it in version 47.")
+
+    return new Stream(@stream.clone())
+
+
+  ###*
+  # Checks whether cloning stream is supported by the browser. See `clone()`
+  # for details
+  # @static
+  # @method canClone
+  # @return {Boolean} `true` if cloning is supported, `false` otherwise
+  ###
+  @canClone: () ->
+    return compat.MediaStream.prototype.clone?
+
+
+  ###*
   # Creates a stream using `getUserMedia()`
   # @method createStream
   # @static
