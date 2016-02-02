@@ -61,6 +61,9 @@ class exports.PeerConnection extends EventEmitter
     if @options.stun?
       ice_servers.push({url: @options.stun})
 
+    if @options.turn?
+      ice_servers.push(@options.turn)
+
     # TODO: STUN
 
     @pc = new compat.PeerConnection({iceServers: ice_servers})
