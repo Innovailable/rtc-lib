@@ -209,7 +209,6 @@ class CallingNamespace extends EventEmitter
 
           delete @users[msg.user]
 
-          @emit('user_changed', user)
           @emit('user_left', user)
           user.emit('left')
 
@@ -233,7 +232,6 @@ class CallingNamespace extends EventEmitter
 
           room.status = msg.status
 
-          @emit('room_changed', room)
           @emit('room_status_changed', room, room.status)
           room.emit('status_changed', room.status)
 
@@ -250,7 +248,6 @@ class CallingNamespace extends EventEmitter
 
           delete @rooms[msg.room]
 
-          @emit('room_changed', room)
           @emit('room_closed')
           room.emit('closed')
 
@@ -324,7 +321,6 @@ class CallingNamespace extends EventEmitter
   addUser: (id, status) ->
     user = new CallingNamespaceUser(id, status)
     @users[id] = user
-    @emit('user_changed', user)
     @emit('user_registered', user)
     return user
 

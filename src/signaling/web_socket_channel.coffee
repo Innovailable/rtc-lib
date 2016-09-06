@@ -34,14 +34,12 @@ class exports.WebSocketChannel extends Channel
           # TODO: better error handling
           # TODO: handle errors after connecting
           delete @socket
-          @emit('error', err)
           reject(new Error("Unable to connect to socket"))
 
         socket.onmessage = (event) =>
           try
             data = JSON.parse(event.data)
           catch
-            @emit('error', "Unable to parse incoming message")
             return
 
           @emit('message', data)
