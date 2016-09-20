@@ -558,7 +558,7 @@ class CallingSignaling extends EventEmitter
       @calling.request {
         type: 'invite_send'
         room: @id
-        user: user.id
+        user: if typeof user == 'string' then user else user.id
         data: data
       }, (err, res) =>
         if err?
