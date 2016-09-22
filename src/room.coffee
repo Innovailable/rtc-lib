@@ -84,6 +84,9 @@ class exports.Room extends EventEmitter
         delete @peers[signaling_peer.id]
         @emit('peer_left', peer)
 
+      peer.on 'message', (data) =>
+        @emit('peer_message', peer, data)
+
       @peers[signaling_peer.id] = peer
       @emit('peer_joined', peer)
 
