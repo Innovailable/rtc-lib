@@ -749,8 +749,8 @@ class CallingRoom extends Room
     return new CallingPeer(pc, signaling, @local, @options)
 
 
-  invite: (user) ->
-    return @signaling.invite(user)
+  invite: (user, data) ->
+    return @signaling.invite(user, data)
 
 
   register: (nsid) ->
