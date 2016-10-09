@@ -70,6 +70,9 @@ class exports.Room extends EventEmitter
 
     @signaling.setStatus(@local._status)
 
+    @signaling.on 'closed', =>
+      @emit('closed')
+
     @local.on 'status_changed', () =>
       @signaling.setStatus(@local._status)
 

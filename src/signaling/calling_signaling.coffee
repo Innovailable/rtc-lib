@@ -537,6 +537,8 @@ class CallingSignaling extends EventEmitter
           peer.emit('left')
           peer.accepted_d.reject("You left the room")
 
+        @emit('closed')
+
         resolve()
 
 
