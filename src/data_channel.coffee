@@ -59,6 +59,9 @@ class exports.DataChannel extends EventEmitter
   # @return {Promise} Promise which resolves as soon as the DataChannel is open
   ###
   connect: () ->
+    if @_connected
+      return Promise.resolve()
+
     @_connected = true
 
     for data in @_connect_queue
