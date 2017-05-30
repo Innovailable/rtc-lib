@@ -199,7 +199,7 @@ class exports.MucSignaling extends Signaling
           status: @status
         })
       .then () =>
-        return @join_d
+        return @join_p
 
     return @connect_p
 

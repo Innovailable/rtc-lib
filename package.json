@@ -10,7 +10,7 @@
   "scripts": {
     "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "dependencies": {
     "es6-promise": "^3.0.2",
     "extend": "^3.0.0"
