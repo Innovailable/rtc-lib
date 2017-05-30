@@ -172,10 +172,6 @@ class exports.Stream extends EventEmitter
   #     rtc.MediaDomElement($('video'), stream);
   ###
   @createStream: (config={audio: true, video: true}) ->
-    return new Promise (resolve, reject) ->
-      # description to pass to getUserMedia()
-      success = (native_stream) ->
-        resolve(new Stream(native_stream))
-
-      compat.getUserMedia(config, success, reject)
+    return compat.getUserMedia(config).then (native_stream) ->
+        return new Stream(native_stream)
 

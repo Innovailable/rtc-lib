@@ -33,19 +33,27 @@
 # @main rtc.internal
 ###
 
-bindHelper = (obj, fun) ->
-  if not fun?
-    return
+getGetUserMedia = () ->
+  mediaDevices = navigator.mediaDevices
 
-  return fun.bind(obj)
+  if mediaDevices?.getUserMedia?
+    return mediaDevices.getUserMedia.bind(mediaDevices)
+  else
+    gum = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia
+
+    if not gum?
+      return undefined
+
+    return (constraints) ->
+      return new Promise (resolve, reject) ->
+        gum.call(navigator, constraints, resolve, reject)
 
 exports.compat = compat = {
   PeerConnection: window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection || window.mozRTCPeerConnection
   IceCandidate: window.RTCIceCandidate || window.mozRTCIceCandidate
   SessionDescription: window.mozRTCSessionDescription || window.RTCSessionDescription
   MediaStream: window.MediaStream || window.mozMediaStream || window.webkitMediaStream
-  getUserMedia: bindHelper(navigator, navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia)
-
+  getUserMedia: getGetUserMedia()
   supported: () ->
     return compat.PeerConnection? and compat.IceCandidate? and compat.SessionDescription? and compat.getUserMedia?
 }
