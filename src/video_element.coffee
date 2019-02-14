@@ -32,7 +32,10 @@ class exports.MediaDomElement
       if mozGetUserMedia?
         @dom.mozSrcObject = data.stream
       else
-        @dom.src = URL.createObjectURL(data.stream)
+        try
+          @dom.srcObject = data.stream
+        catch
+          @dom.src = URL.createObjectURL(data.stream)
 
       @dom.play()
 

@@ -49,7 +49,7 @@ getGetUserMedia = () ->
         gum.call(navigator, constraints, resolve, reject)
 
 exports.compat = compat = {
-  PeerConnection: window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection || window.mozRTCPeerConnection
+  PeerConnection: window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection || window.mozRTCPeerConnection || window.RTCPeerConnection
   IceCandidate: window.RTCIceCandidate || window.mozRTCIceCandidate
   SessionDescription: window.mozRTCSessionDescription || window.RTCSessionDescription
   MediaStream: window.MediaStream || window.mozMediaStream || window.webkitMediaStream

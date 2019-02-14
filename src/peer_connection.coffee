@@ -59,7 +59,7 @@ class exports.PeerConnection extends EventEmitter
     @no_gc_bugfix = []
 
     if @options.stun?
-      ice_servers.push({url: @options.stun})
+      ice_servers.push({urls: @options.stun})
 
     if @options.turn?
       ice_servers.push(@options.turn)
@@ -80,8 +80,9 @@ class exports.PeerConnection extends EventEmitter
     @pc.onicecandidate = (event) =>
       @emit('ice_candidate', event.candidate)
 
-    @pc.onaddstream = (event) =>
-      @emit('stream_added', new Stream(event.stream))
+    @pc.ontrack = (event) =>
+      for stream in event.streams
+        @emit('stream_added', new Stream(stream))
 
     @pc.ondatachannel = (event) =>
       @emit('data_channel_ready', new DataChannel(event.channel))
@@ -133,7 +134,6 @@ class exports.PeerConnection extends EventEmitter
       @pc.addIceCandidate(candidate)
     else
       # TODO: end of ice trickling ... do something?
-      console.log("ICE trickling stopped")
 
 
   ###*
@@ -160,9 +160,8 @@ class exports.PeerConnection extends EventEmitter
   # @return {Promise} Promise which will be resolved once the remote description was set successfully
   ###
   _setRemoteDescription: (sdp) ->
-    return new Promise (resolve, reject) =>
-      description = new compat.SessionDescription(sdp)
-      @pc.setRemoteDescription(sdp, resolve, reject)
+    description = new compat.SessionDescription(sdp)
+    return @pc.setRemoteDescription(sdp)
 
 
   ###*
@@ -171,9 +170,7 @@ class exports.PeerConnection extends EventEmitter
   # @private
   ###
   _offer: () ->
-    return new Promise (resolve, reject) =>
-      @pc.createOffer(resolve, reject, @_oaOptions())
-    .then (sdp) =>
+    @pc.createOffer(@_oaOptions()).then (sdp) =>
       return @_processLocalSdp(sdp)
     .catch (err) =>
       @_connectError(err)
@@ -185,9 +182,7 @@ class exports.PeerConnection extends EventEmitter
   # @private
   ###
   _answer: () ->
-    new Promise (resolve, reject) =>
-      @pc.createAnswer(resolve, reject, @_oaOptions())
-    .then (sdp) =>
+    @pc.createAnswer(@_oaOptions()).then (sdp) =>
       return @_processLocalSdp(sdp)
     .catch (err) =>
       @_connectError(err)
@@ -201,18 +196,14 @@ class exports.PeerConnection extends EventEmitter
   # @return {Promise} Promise which will be resolved once the local description was set successfully
   ###
   _processLocalSdp: (sdp) ->
-    new Promise (resolve, reject) =>
-      success = () =>
-        data  = {
-          sdp: sdp.sdp
-          type: sdp.type
-        }
+    @pc.setLocalDescription(sdp).then () =>
+      data  = {
+        sdp: sdp.sdp
+        type: sdp.type
+      }
 
-        @emit('signaling', data)
-        resolve(sdp)
-
-      @pc.setLocalDescription(sdp, success, reject)
-
+      @emit('signaling', data)
+      return sdp
 
   ###*
   # Mark connection attempt as failed
@@ -223,7 +214,6 @@ class exports.PeerConnection extends EventEmitter
   _connectError: (err) ->
     # TODO: better errors
     @connect_d.reject(err)
-    console.log(err)
     @emit('error', err)
 
 
@@ -233,7 +223,8 @@ class exports.PeerConnection extends EventEmitter
   # @param {rtc.Stream} stream The local stream
   ###
   addStream: (stream) ->
-    @pc.addStream(stream.stream)
+    for track in stream.stream.getTracks()
+      @pc.addTrack(track, stream.stream)
 
 
   ###*
