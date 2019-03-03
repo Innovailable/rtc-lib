@@ -59,16 +59,20 @@ class Calling extends EventEmitter
     @channel.on 'closed', () =>
       @emit('closed')
 
-      if @ping_interval
-        clearInterval(@ping_interval)
-        delete @ping_interval
+      if @ping_timeout
+        clearTimeout(@ping_timeout)
+        delete @ping_timeout
 
 
   connect: () ->
     @channel.connect().then () =>
       @resetPing()
 
-      return @hello_p
+      return Promise.all([
+        @request({type: 'remote_ping', time: 30 * 1000})
+        @hello_p
+      ]).then ([ping, hello]) ->
+        return hello
 
 
   request: (msg, cb) ->
@@ -99,7 +103,7 @@ class Calling extends EventEmitter
     @ping_timeout = setTimeout () =>
       @ping()
       @resetPing()
-    , 2 * 60 * 1000
+    , 60 * 1000
 
 
   subscribe: (nsid) ->
