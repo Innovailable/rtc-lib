@@ -1,10 +1,8 @@
 # file locations
 
-SOURCES=$(wildcard src/*.coffee) $(wildcard src/*/*.coffee)
-TEST_SOURCES=$(wildcard test/bootstrap.coffee test/unit/*.coffee test/unit/*/*.coffee)
-MAIN_SRC=src/lib.coffee
-
-JS_SOURCES=${SOURCES:src/%.coffee=dist/%.js}
+SOURCES=$(shell find src -iname '*.ts')
+TEST_SOURCES=$(shell find src -iname '*.ts')
+MAIN_SRC=src/index.ts
 
 OUT_DIR=out
 OUT_NAME=rtc
@@ -17,11 +15,9 @@ TEST_BUNDLE=$(OUT_DIR)/$(OUT_NAME).test.js
 
 # phony stuff
 
-all: compile bundle min
+all: bundle min
 
 bundle: $(BUNDLE) $(DEP_BUNDLE)
-
-compile: $(JS_SOURCES)
 
 min: $(MIN_BUNDLE) $(MIN_DEP_BUNDLE)
 
@@ -53,26 +49,27 @@ karma: init $(TEST_BUNDLE)
 
 $(BUNDLE): $(SOURCES) init Makefile
 	@mkdir -p $(OUT_DIR)
-	node_modules/.bin/browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d --no-bundle-external $(MAIN_SRC) -o $@
+	node_modules/.bin/browserify --extension .ts -p tsify -t [ babelify --extensions .ts ] -s $(OUT_NAME) -d --no-bundle-external $(MAIN_SRC) -o $@
 
 $(DEP_BUNDLE): $(SOURCES) init Makefile
 	@mkdir -p $(OUT_DIR)
-	node_modules/.bin/browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d $(MAIN_SRC) -o $@
+	node_modules/.bin/browserify --extension .ts -p tsify -t [ babelify --extensions .ts ] -s $(OUT_NAME) -d $(MAIN_SRC) -o $@
 
 $(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) init Makefile
-	node_modules/.bin/browserify -c 'coffee -sc' --extension=".coffee" -s $(OUT_NAME) -d $(MAIN_SRC) $(TEST_SOURCES) -o $@
+	node_modules/.bin/browserify --extension .ts -p tsify -t [ babelify --extensions .ts ] -s $(OUT_NAME) -d $(MAIN_SRC) $(TEST_SOURCES) -o $@
 
 %.min.js: %.js init Makefile
 	node_modules/.bin/uglifyjs --compress --mangle -o $@ -- $<
 
-dist/%.js: src/%.coffee Makefile
-	@mkdir -p `dirname $@`
-	coffee -cb -o `dirname $@` $<
 
-dist: compile
+compile: $(SOURCES) node_modules Makefile
+	@mkdir -p dist
+	node_modules/.bin/tsc src/index.ts --declaration --outDir dist/
+
+pack: compile
 	npm pack
 
 publish: dist
 	npm publish
 
-.PHONY: all compile min clean doc test karma init example
+.PHONY: all compile pack min clean doc test karma init example

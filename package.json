@@ -8,35 +8,50 @@
     "url": "https://github.com/innovailable/rtc-lib.git"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --compilers coffee:coffee-script/register --recursive"
+    "test": "./node_modules/.bin/mocha -r ts-node/register --recursive"
   },
   "version": "0.3.1",
   "dependencies": {
+    "@types/browserify": "^12.0.36",
+    "@types/webrtc": "0.0.26",
     "es6-promise": "^3.0.2",
     "extend": "^3.0.0"
   },
   "keywords": [
     "webrtc"
   ],
-  "main": "dist/lib.js",
+  "main": "dist/index.js",
   "devDependencies": {
-    "browserify": "^11.2.0",
-    "uglifyjs": "^2.4.10",
-    "coffee-script": "^1.10.0",
-    "chai": "^3.3.0",
-    "chai-as-promised": "^5.1.0",
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.7",
+    "@babel/preset-env": "^7.8.7",
+    "babel-minify": "^0.5.1",
+    "babel-preset-minify": "^0.5.1",
+    "babelify": "^10.0.0",
+    "browserify": "^16.5.0",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "core-js": "^3.6.4",
     "easy-signaling": "^1.0.0",
-    "express": "^4.13.3",
-    "express-ws": "^1.0.0-rc.2",
-    "js-combinatorics": "^0.5.0",
-    "karma": "^0.13.10",
-    "karma-chrome-launcher": "^0.2.0",
-    "karma-cli": "^0.1.1",
-    "karma-firefox-launcher": "^0.1.6",
-    "karma-mocha": "^0.2.0",
-    "karma-sourcemap-loader": "^0.3.5",
-    "mocha": "^2.3.3",
-    "object-keys": "^1.0.7",
-    "yuidocjs": "^0.9.0"
+    "envify": "^4.1.0",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.1",
+    "express": "^4.17.1",
+    "express-ws": "^4.0.0",
+    "js-combinatorics": "^0.5.5",
+    "karma": "^4.4.1",
+    "karma-chrome-launcher": "^3.1.0",
+    "karma-cli": "^2.0.0",
+    "karma-firefox-launcher": "^1.3.0",
+    "karma-mocha": "^1.3.0",
+    "karma-sourcemap-loader": "^0.3.7",
+    "mocha": "^7.1.1",
+    "object-keys": "^1.1.1",
+    "ts-node": "^8.7.0",
+    "tsify": "^4.0.1",
+    "typescript": "^3.8.3",
+    "uglifyjs": "^2.4.11",
+    "yuidocjs": "^0.10.2"
   }
 }

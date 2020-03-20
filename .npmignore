@@ -1,0 +1,12 @@
+src
+test
+out
+yuidoc
+example
+Makefile
+.babelrc
+.eslintrc
+tsconfig.json
+karma.conf.js
+yuidoc-theme
+*.tgz
