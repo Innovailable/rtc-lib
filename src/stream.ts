@@ -192,8 +192,7 @@ export class Stream extends EventEmitter {
    *     var stream = rtc.Stream.createStream({audio: true, video: false});
    *     rtc.MediaDomElement($('video'), stream);
    */
-  static createStream(config: MediaStreamConstraints) {
-    if (config == null) { config = {audio: true, video: true}; }
+  static createStream(config: MediaStreamConstraints = {audio: true, video: true}) {
     // TODO
     return navigator.mediaDevices.getUserMedia(config).then(native_stream => new Stream(native_stream));
   }

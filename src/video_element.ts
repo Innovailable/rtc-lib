@@ -18,7 +18,7 @@ export class MediaDomElement {
   dom: HTMLVideoElement | HTMLAudioElement;
   stream?: Stream;
 
-  constructor(dom: HTMLVideoElement | HTMLAudioElement, data: Peer | Stream | null) {
+  constructor(dom: HTMLVideoElement | HTMLAudioElement, data: Peer | Stream | Promise<Stream> | null) {
     this.dom = dom;
     // TODO
     //if (this.dom.jquery != null) {
@@ -40,6 +40,7 @@ export class MediaDomElement {
 
     } else if (data instanceof Stream) {
       this.stream = data;
+      this.dom.srcObject = data.stream;
       this.dom.play();
 
     } else if (data instanceof Peer) {

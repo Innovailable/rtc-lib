@@ -36,7 +36,7 @@ export class Room extends EventEmitter {
   signaling: Signaling;
   options: Record<string,any>
   local: LocalPeer;
-  peers: Record<string,Peer>;
+  peers: Record<string,RemotePeer>;
   join_p?: Promise<unknown>;
 
   /**
@@ -92,11 +92,12 @@ export class Room extends EventEmitter {
     this.signaling.setStatus(this.local._status);
 
     this.signaling.on('closed', () => {
-      return this.emit('closed');
+      this.peers = {};
+      this.emit('closed');
     });
 
     this.local.on('status_changed', () => {
-      return this.signaling.setStatus(this.local._status);
+      this.signaling.setStatus(this.local._status);
     });
 
     this.signaling.on('peer_joined', signaling_peer => {
@@ -104,23 +105,26 @@ export class Room extends EventEmitter {
       const peer = this.createPeer(pc, signaling_peer);
 
       peer.on('status_changed', status => {
-        return this.emit('peer_status_changed', peer, status);
+        this.emit('peer_status_changed', peer, status);
       });
 
       peer.on('left', () => {
         delete this.peers[signaling_peer.id];
-        return this.emit('peer_left', peer);
+        this.emit('peer_left', peer);
+        this.emit('peers_changed', this.peers);
       });
 
       peer.on('message', data => {
-        return this.emit('peer_message', peer, data);
+        this.emit('peer_message', peer, data);
       });
 
       this.peers[signaling_peer.id] = peer;
-      this.emit('peer_joined', peer);
+      this.emit('peer_joined', peer, signaling_peer.id);
+      this.emit('peers_changed', this.peers);
 
-      return peer.on('closed', () => {
-        return delete this.peers[signaling_peer.id];
+      peer.on('closed', () => {
+        // TODO
+        //delete this.peers[signaling_peer.id];
     });
   });
 
@@ -168,7 +172,7 @@ export class Room extends EventEmitter {
    * @param {rtc.PeerConnection} pc The PeerConnection to the peer
    * @param {rtc.SignalingPeer} signaling_peer The signaling connection to the peer
    */
-  createPeer(pc: PeerConnection, signaling_peer: SignalingPeer) {
+  createPeer(pc: PeerConnection, signaling_peer: SignalingPeer): RemotePeer {
     return new RemotePeer(pc, signaling_peer, this.local, this.options);
   }
 };

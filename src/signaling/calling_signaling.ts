@@ -202,9 +202,9 @@ export class Calling extends EventEmitter {
   }
 
 
-  room(room: string, options: Record<string,any>): CallingRoom {
+  room(room: string, options?: Record<string,any>): CallingRoom {
     const signaling = this.room_signaling(room);
-    return new CallingRoom(signaling, options || this.room_options);
+    return new CallingRoom(signaling, options || this.room_options || {});
   }
 
 
@@ -1094,7 +1094,7 @@ export class CallingInvitationRoom extends CallingRoom {
 }
 
 
-class CallingPeer extends RemotePeer {
+export class CallingPeer extends RemotePeer {
 
   signaling!: CallingSignalingPeer;
 
@@ -1105,7 +1105,7 @@ class CallingPeer extends RemotePeer {
 
   connect(): Promise<unknown> {
     return this.signaling.accepted().then(() => {
-      return CallingPeer.prototype.connect.call(this);
+      return super.connect();
     });
   }
 }
