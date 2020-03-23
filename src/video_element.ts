@@ -35,13 +35,11 @@ export class MediaDomElement {
     if ((data == null)) {
       delete this.stream;
 
-      this.dom.pause();
       this.dom.src = "";
 
     } else if (data instanceof Stream) {
       this.stream = data;
       this.dom.srcObject = data.stream;
-      this.dom.play();
 
     } else if (data instanceof Peer) {
       if (data.isLocal()) {
