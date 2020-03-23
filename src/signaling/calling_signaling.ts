@@ -752,25 +752,30 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  close(): Promise<unknown> {
-    return new Promise((resolve, reject) => {
-      return this.calling.request({
-        type: 'room_leave',
-        room: this.id
-      }, err => {
-        this.emit('left');
+  async close(): Promise<unknown> {
+    if(this.connect_p) {
+      await this.connect_p;
+      return new Promise((resolve, reject) => {
+        return this.calling.request({
+          type: 'room_leave',
+          room: this.id
+        }, err => {
+          this.emit('left');
 
-        for (let _ in this.peers) {
-          const peer = this.peers[_];
-          peer.emit('left');
-          peer.accepted_d.reject("You left the room");
-        }
+          for (let _ in this.peers) {
+            const peer = this.peers[_];
+            peer.emit('left');
+            peer.accepted_d.reject("You left the room");
+          }
 
-        this.emit('closed');
+          this.emit('closed');
 
-        return resolve();
+          return resolve();
+        });
       });
-    });
+    } else {
+      return Promise.resolve();
+    }
   }
 
 
