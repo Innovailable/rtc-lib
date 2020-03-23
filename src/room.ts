@@ -17,6 +17,8 @@ import { PeerConnection } from './peer_connection';
 import { Signaling, SignalingPeer } from './signaling/signaling';
 import { Peer } from './peer';
 
+export type RoomState = "idle" | "connecting" | "connected" | "closed" | "failed";
+
 /**
  * @module rtc
  */
@@ -38,6 +40,7 @@ export class Room extends EventEmitter {
   local: LocalPeer;
   peers: Record<string,RemotePeer>;
   join_p?: Promise<unknown>;
+  state: RoomState = "idle";
 
   /**
    * A new peer is encountered in the room. Fires on new remote peers after joining and for all peers in the room when joining.
@@ -94,6 +97,10 @@ export class Room extends EventEmitter {
     this.signaling.on('closed', () => {
       this.peers = {};
       this.emit('closed');
+
+      if(this.state === "connected") {
+        this.setState("closed");
+      }
     });
 
     this.local.on('status_changed', () => {
@@ -139,10 +146,16 @@ export class Room extends EventEmitter {
    */
   connect() {
     if ((this.join_p == null)) {
+      this.setState("connecting");
       this.join_p = this.signaling.connect();
     }
 
-    return this.join_p;
+    return this.join_p.then(() => {
+      this.setState("connected");
+    }).catch((err) => {
+      this.setState("failed");
+      throw err;
+    });
   }
 
 
@@ -174,5 +187,10 @@ export class Room extends EventEmitter {
    */
   createPeer(pc: PeerConnection, signaling_peer: SignalingPeer): RemotePeer {
     return new RemotePeer(pc, signaling_peer, this.local, this.options);
+  }
+
+  private setState(state: RoomState): void {
+    this.state = state;
+    this.emit("state_changed", state);
   }
 };

@@ -56,13 +56,12 @@ export class LocalPeer extends Peer {
    * @param {String} key The key of the value. Will return
    * @param value The value to store
    */
-  status(key: string, value: any) {
+  status(key: string, value?: any) {
     if (value != null) {
       this._status[key] = value;
       this.emit('status_changed', this._status);
-      return;
     } else {
-      return this._status[key];
+      this._status[key];
     }
   }
 

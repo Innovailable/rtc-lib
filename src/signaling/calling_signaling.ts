@@ -20,6 +20,8 @@ import { Channel } from './signaling';
 type CallingStatus = Record<string,any>;
 type DataCb = (error: Error | undefined, data?: any) => void;
 
+export type CallingState = "idle" | "connecting" | "connected" | "closed" | "failed";
+
 export class Calling extends EventEmitter {
   id?: string;
   channel: Channel;
@@ -28,6 +30,7 @@ export class Calling extends EventEmitter {
   answers: Record<string,Deferred<any>|DataCb>;
   hello_p: Promise<string>;
   ping_timeout?: NodeJS.Timeout;
+  state: CallingState = "idle";
 
   constructor(channel: Channel, room_options: Record<string,any>) {
       super();
@@ -92,6 +95,8 @@ export class Calling extends EventEmitter {
     });
 
     this.channel.on('closed', () => {
+      this.setState("closed");
+
       this.emit('closed');
 
       if (this.ping_timeout) {
@@ -103,6 +108,10 @@ export class Calling extends EventEmitter {
 
 
   connect(): Promise<unknown> {
+    if(this.state === "idle") {
+      this.setState("connecting");
+    }
+
     return this.channel.connect().then(() => {
       this.resetPing();
 
@@ -113,6 +122,11 @@ export class Calling extends EventEmitter {
         const [ping, hello] = Array.from(args[0]);
         return hello;
       });
+    }).then(() => {
+      this.setState("connected");
+    }).catch((err) => {
+      this.setState("failed");
+      throw err;
     });
   }
 
@@ -229,6 +243,11 @@ export class Calling extends EventEmitter {
 
   close() {
     return this.channel.close();
+  }
+
+  private setState(state: CallingState) {
+    this.state = state;
+    this.emit("state_changed", state);
   }
 }
 
@@ -699,22 +718,24 @@ export class CallingSignaling extends EventEmitter {
 
   connect(): Promise<unknown> {
     if ((this.connect_p == null)) {
-      this.connect_p = new Promise((resolve, reject) => {
-        return this.connect_fun(this.peer_status, (err, res) => {
-          if (err != null) {
-            return reject(err);
-          } else {
-            if (res != null) {
-              this.init(res);
-            }
+      this.connect_p = this.calling.connect().then(() => {
+        new Promise((resolve, reject) => {
+          return this.connect_fun(this.peer_status, (err, res) => {
+            if (err != null) {
+              return reject(err);
+            } else {
+              if (res != null) {
+                this.init(res);
+              }
 
-            if (!this.initialized) {
-              reject(new Error("Missing information from connect response"));
-              return;
-            }
+              if (!this.initialized) {
+                reject(new Error("Missing information from connect response"));
+                return;
+              }
 
-            return resolve();
-          }
+              return resolve();
+            }
+          });
         });
       });
     }
