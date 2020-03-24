@@ -12,6 +12,33 @@ import { EventEmitter } from 'events';
 import { Stream } from './stream';
 import { DataChannel } from './data_channel';
 
+export interface FingerprintInfo {
+  type: string;
+  hash: string;
+}
+
+export interface PeerConnectionFingerprints {
+  local?: FingerprintInfo;
+  remote?: FingerprintInfo;
+}
+
+function parseSdpFingerprint(sdp: RTCSessionDescription | null): FingerprintInfo | undefined {
+  if(sdp == null) {
+    return;
+  }
+
+  const match = sdp.sdp.match(/a=fingerprint:([^ ]+) ([A-Za-z0-9:]+)/);
+
+  if(match == null) {
+    return;
+  }
+
+  return {
+    type: match[1],
+    hash: match[2],
+  }
+}
+
 /**
  * @module rtc
  */
@@ -135,6 +162,14 @@ export class PeerConnection extends EventEmitter {
     this.pc.onsignalingstatechange = function(event) {};
   }
       //console.log(event)
+
+
+  fingerprints(): PeerConnectionFingerprints {
+    return {
+      local: parseSdpFingerprint(this.pc.currentLocalDescription),
+      remote: parseSdpFingerprint(this.pc.currentRemoteDescription),
+    }
+  }
 
 
   /**

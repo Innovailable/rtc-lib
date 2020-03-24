@@ -11,7 +11,7 @@ import { Peer } from './peer';
 import { StreamCollection } from './internal/stream_collection';
 import { ChannelCollection } from './internal/channel_collection';
 import { SignalingPeer } from './signaling/signaling';
-import { PeerConnection } from './peer_connection'
+import { PeerConnection, PeerConnectionFingerprints } from './peer_connection'
 import { LocalPeer } from './local_peer'
 import { Stream } from './stream'
 import { DataChannel } from './data_channel'
@@ -340,6 +340,11 @@ export class RemotePeer extends Peer {
     this.private_channels[name] = desc;
 
     return this.channel(name);
+  }
+
+
+  currentFingerprints(): PeerConnectionFingerprints {
+    return this.peer_connection.fingerprints();
   }
 
 
