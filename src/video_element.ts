@@ -17,6 +17,7 @@ import { Peer } from './peer';
 export class MediaDomElement {
   dom: HTMLVideoElement | HTMLAudioElement;
   stream?: Stream;
+  cleanup?: () => void;
 
   constructor(dom: HTMLVideoElement | HTMLAudioElement, data: Peer | Stream | Promise<Stream> | null) {
     this.dom = dom;
@@ -31,10 +32,15 @@ export class MediaDomElement {
 
 
   attach(data?: null | Peer | Stream | Promise<Peer> | Promise<Stream>): void {
+    if(this.cleanup != null) {
+      this.cleanup();
+      delete this.cleanup;
+    }
+
+    delete this.stream;
+
     // TODO: handle conflict between multiple calls
     if ((data == null)) {
-      delete this.stream;
-
       this.dom.src = "";
 
     } else if (data instanceof Stream) {
@@ -46,7 +52,19 @@ export class MediaDomElement {
         this.mute();
       }
 
-      return this.attach(data.stream());
+      const changeCb = () => {
+	console.log("stream changed");
+	this.attach(data.stream());
+      };
+
+      data.on("streams_changed", changeCb);
+
+      this.attach(data.stream());
+
+      this.cleanup = () => {
+	console.log("change cleanup");
+	data.removeListener("streams_changed", changeCb);
+      };
 
     } else if ('then' in data) {
       // TODO

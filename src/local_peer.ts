@@ -103,6 +103,7 @@ export class LocalPeer extends Peer {
       // TODO: collision detection?
       this.streams[name] = stream_p;
       this.emit('configuration_changed');
+      this.emit('streams_changed');
       return stream_p;
     };
 
