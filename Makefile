@@ -64,7 +64,7 @@ $(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) init Makefile
 
 compile: $(SOURCES) node_modules Makefile
 	@mkdir -p dist
-	node_modules/.bin/tsc src/index.ts --declaration --outDir dist/
+	node_modules/.bin/tsc --declaration --outDir dist/
 
 pack: compile
 	npm pack
