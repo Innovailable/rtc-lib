@@ -27,15 +27,23 @@ function parseSdpFingerprint(sdp: RTCSessionDescription | null): FingerprintInfo
     return;
   }
 
-  const match = sdp.sdp.match(/a=fingerprint:([^ ]+) ([A-Za-z0-9:]+)/);
+  const fingerprints = new Set(sdp.sdp.matchAll(/^a=fingerprint:(.*)/));
 
-  if(match == null) {
+  if(fingerprints.size === 0) {
     return;
   }
 
+  if(fingerprints.size > 0) {
+    console.log("multiple fingerprints, aborting");
+    return;
+  }
+
+  const fingerprint = fingerprints.values().next().value;
+  const [type, hash] = fingerprint.split(' ');
+
   return {
-    type: match[1],
-    hash: match[2],
+    type: type,
+    hash: hash,
   }
 }
 
