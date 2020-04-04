@@ -64,7 +64,9 @@ $(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) init Makefile
 
 compile: $(SOURCES) node_modules Makefile
 	@mkdir -p dist
-	node_modules/.bin/tsc --declaration --outDir dist/
+	node_modules/.bin/tsc --declaration --outDir dist/js/
+	node_modules/.bin/babel --out-dir dist/ejs/ dist/js
+	node_modules/.bin/babel --plugins "@babel/plugin-transform-modules-commonjs" --out-dir dist/cjs/ dist/ejs
 
 pack: compile
 	npm pack

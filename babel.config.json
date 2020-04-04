@@ -1,0 +1,8 @@
+{
+	"plugins": [
+		"@babel/proposal-class-properties",
+		"@babel/plugin-proposal-export-default-from",
+		"@babel/proposal-export-namespace-from",
+		"@babel/plugin-proposal-optional-chaining"
+	]
+}
