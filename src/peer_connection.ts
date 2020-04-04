@@ -27,14 +27,16 @@ function parseSdpFingerprint(sdp: RTCSessionDescription | null): FingerprintInfo
     return;
   }
 
-  const fingerprints = new Set(sdp.sdp.matchAll(/^a=fingerprint:(.*)/));
+  const matches = sdp.sdp.matchAll(/^a=fingerprint:(.*)$/gm);
+  const fingerprints = new Set(Array.from(matches, (match) => match[1]));
 
   if(fingerprints.size === 0) {
     return;
   }
 
-  if(fingerprints.size > 0) {
+  if(fingerprints.size > 1) {
     console.log("multiple fingerprints, aborting");
+    console.log(fingerprints);
     return;
   }
 
