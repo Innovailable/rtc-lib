@@ -1,10 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import { EventEmitter } from 'events';
 
 import {WebSocketChannel} from './signaling/web_socket_channel';
@@ -145,7 +138,7 @@ export class Room extends EventEmitter {
    * @return {Promise} A promise which will be resolved once the room was joined
    */
   connect() {
-    if ((this.join_p == null)) {
+    if (this.join_p == null) {
       this.setState("connecting");
       this.join_p = this.signaling.connect();
     }

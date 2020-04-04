@@ -1,10 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import {Deferred} from './promise';
 import {EventEmitter} from 'events';
 
@@ -125,7 +118,7 @@ export class ChannelCollection extends EventEmitter {
     // notice @local only channels
 
     for (const name in this.local) {
-      if ((this.remote[name] == null)) {
+      if (this.remote[name] == null) {
         console.log("DataChannel offered by local but not by remote");
       }
     }

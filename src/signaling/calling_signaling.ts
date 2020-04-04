@@ -1,7 +1,5 @@
 /*
  * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS101: Remove unnecessary use of Array.from
  * DS102: Remove unnecessary code created because of implicit returns
  * DS201: Simplify complex destructure assignments
  * DS207: Consider shorter variations of null checks
@@ -49,7 +47,8 @@ export class Calling extends EventEmitter {
       switch (msg.type) {
         case 'hello':
           this.id = msg.id;
-          return hello_d.resolve(msg.server);
+          hello_d.resolve(msg.server);
+          return;
 
         case 'answer':
           if ((msg.tid == null)) {
@@ -67,17 +66,19 @@ export class Calling extends EventEmitter {
 
           if ('resolve' in answer) {
             if (msg.error != null) {
-              return answer.reject(new Error(msg.error));
+              answer.reject(new Error(msg.error));
             } else {
-              return answer.resolve(msg.data);
+              answer.resolve(msg.data);
             }
           } else {
             if (msg.error != null) {
-              return answer(new Error(msg.error));
+              answer(new Error(msg.error));
             } else {
-              return answer(undefined, msg.data);
+              answer(undefined, msg.data);
             }
           }
+
+          return;
 
         case 'invite_incoming':
           if ((msg.handle == null) || (msg.sender == null) || !msg.room || (msg.status == null) || (msg.peers == null) || (msg.data == null)) {
@@ -90,7 +91,8 @@ export class Calling extends EventEmitter {
           // TODO
           //room.signaling.init(msg);
 
-          return this.emit('invitation', room);
+          this.emit('invitation', room);
+          return;
       }
     });
 
@@ -101,7 +103,7 @@ export class Calling extends EventEmitter {
 
       if (this.ping_timeout) {
         clearTimeout(this.ping_timeout);
-        return delete this.ping_timeout;
+        delete this.ping_timeout;
       }
     });
   }
@@ -118,8 +120,7 @@ export class Calling extends EventEmitter {
       return Promise.all([
         this.request({type: 'remote_ping', time: 30 * 1000}),
         this.hello_p
-      ]).then(function(...args) {
-        const [ping, hello] = Array.from(args[0]);
+      ]).then(([ping, hello]) => {
         return hello;
       });
     }).then(() => {
@@ -133,7 +134,7 @@ export class Calling extends EventEmitter {
   request(msg: any, cb: DataCb): void;
   request(msg: any): Promise<any>;
 
-  request(msg: any, cb?: DataCb): Promise<any> | void {
+  request(msg: any, cb?: DataCb): Promise<any> | undefined {
     msg.tid = this.next_tid++;
 
     this.channel.send(msg);
@@ -164,7 +165,7 @@ export class Calling extends EventEmitter {
 
     this.ping_timeout = setTimeout(() => {
       this.ping();
-      return this.resetPing();
+      this.resetPing();
     }
     , 60 * 1000);
   }
@@ -173,12 +174,12 @@ export class Calling extends EventEmitter {
   subscribe(nsid: string): Promise<CallingNamespace> {
     // uses callback to avoid race conditions with promises
     return new Promise((resolve, reject) => {
-      return this.request({
+      this.request({
         type: 'ns_subscribe',
         namespace: nsid
       }, (err, data) => {
         if (err != null) {
-          return reject(err);
+          reject(err);
         } else {
           let id, status;
           const namespace = new CallingNamespace(this, nsid);
@@ -193,7 +194,7 @@ export class Calling extends EventEmitter {
             namespace.addRoom(id, room.status, room.peers);
           }
 
-          return resolve(namespace);
+          resolve(namespace);
         }
       });
     });
@@ -280,7 +281,8 @@ export class CallingNamespace extends EventEmitter {
             return;
           }
 
-          return this.addUser(msg.user, msg.status);
+          this.addUser(msg.user, msg.status);
+          return;
         }
 
         case 'ns_user_update': {
@@ -299,7 +301,8 @@ export class CallingNamespace extends EventEmitter {
           user.status = msg.status;
           this.emit('user_changed', user);
           this.emit('user_status_changed', user, user.status);
-          return user.emit('status_changed', user.status);
+          user.emit('status_changed', user.status);
+          return;
         }
 
         case 'ns_user_rm': {
@@ -318,7 +321,8 @@ export class CallingNamespace extends EventEmitter {
           delete this.users[msg.user];
 
           this.emit('user_left', user);
-          return user.emit('left');
+          user.emit('left');
+          return;
         }
 
         case 'ns_room_add': {
@@ -327,7 +331,8 @@ export class CallingNamespace extends EventEmitter {
             return;
           }
 
-          return this.addRoom(msg.room, msg.status, msg.peers);
+          this.addRoom(msg.room, msg.status, msg.peers);
+          return;
         }
 
         case 'ns_room_update': {
@@ -346,7 +351,8 @@ export class CallingNamespace extends EventEmitter {
           room.status = msg.status;
 
           this.emit('room_status_changed', room, room.status);
-          return room.emit('status_changed', room.status);
+          room.emit('status_changed', room.status);
+          return;
         }
 
         case 'ns_room_rm': {
@@ -365,7 +371,8 @@ export class CallingNamespace extends EventEmitter {
           delete this.rooms[msg.room];
 
           this.emit('room_closed');
-          return room.emit('closed');
+          room.emit('closed');
+          return;
         }
 
         case 'ns_room_peer_add': {
@@ -384,7 +391,8 @@ export class CallingNamespace extends EventEmitter {
           var peer = room.addPeer(msg.user, msg.status, msg.pending);
 
           this.emit('room_changed', room);
-          return this.emit('room_peer_joined', room, peer);
+          this.emit('room_peer_joined', room, peer);
+          return;
         }
 
         case 'ns_room_peer_update': {
@@ -415,9 +423,9 @@ export class CallingNamespace extends EventEmitter {
 
             this.emit('room_changed', room);
             this.emit('peer_accepted', peer);
-            return peer.emit('accepted');
+            peer.emit('accepted');
           }
-          break;
+          return;
         }
 
         case 'ns_room_peer_rm': {
@@ -438,7 +446,8 @@ export class CallingNamespace extends EventEmitter {
 
           this.emit('room_changed', room);
           this.emit('room_peer_left', room, peer);
-          return peer.emit('left');
+          peer.emit('left');
+          return;
         }
       }
     };
@@ -446,7 +455,7 @@ export class CallingNamespace extends EventEmitter {
     this.calling.channel.on('message', message_handler);
 
     this.on('unsubscribed', () => {
-      return this.calling.channel.removeListener('message', message_handler);
+      this.calling.channel.removeListener('message', message_handler);
     });
   }
 
@@ -475,13 +484,14 @@ export class CallingNamespace extends EventEmitter {
 
 
   unsubscribe() {
+    // TODO why not simple promise flow?
     return new Promise((resolve, reject) => {
-      return this.calling.request({
+      this.calling.request({
         type: 'ns_unsubscribe',
         namespace: this.id
       }, err => {
         if (err != null) {
-          return reject(err);
+          reject(err);
         } else {
           for (let _ in this.users) {
             const user = this.users[_];
@@ -492,7 +502,7 @@ export class CallingNamespace extends EventEmitter {
 
           this.emit('unsubscribed');
 
-          return resolve();
+          resolve();
         }
       });
     });
@@ -561,7 +571,7 @@ export class CallingNamespaceRoomPeer extends EventEmitter {
     }
 
     this.on('left', () => {
-      return this.accepted_d.reject("Peer left");
+      this.accepted_d.reject("Peer left");
     });
   }
 
@@ -607,7 +617,8 @@ export class CallingSignaling extends EventEmitter {
           }
 
           this.status = msg.status;
-          return this.emit('status_changed', this.status);
+          this.emit('status_changed', this.status);
+	  return;
 
         case 'room_peer_add':
           if ((msg.user == null) || (msg.pending == null) || (msg.status == null)) {
@@ -615,7 +626,8 @@ export class CallingSignaling extends EventEmitter {
             return;
           }
 
-          return this.addPeer(msg.user, msg.status, msg.pending, true);
+          this.addPeer(msg.user, msg.status, msg.pending, true);
+	  return;
 
         case 'room_peer_rm':
           console.log('removing');
@@ -636,7 +648,8 @@ export class CallingSignaling extends EventEmitter {
           console.log('removed', this.peers);
 
           this.emit('peer_left', peer);
-          return peer.emit('left');
+          peer.emit('left');
+	  return;
 
         case 'room_peer_update':
           if ((msg.user == null)) {
@@ -663,7 +676,8 @@ export class CallingSignaling extends EventEmitter {
             peer.accepted_d.resolve(null);
 
             this.emit('peer_accepted');
-            return peer.emit('accepted');
+            peer.emit('accepted');
+	    return;
           }
           break;
 
@@ -682,14 +696,15 @@ export class CallingSignaling extends EventEmitter {
           }
 
           this.emit('peer_left');
-          return peer.emit(msg.event, msg.data);
+          peer.emit(msg.event, msg.data);
+	  return;
       }
     };
 
     this.calling.channel.on('message', message_handler);
 
     this.on('left', () => {
-      return this.calling.channel.removeListener('message', message_handler);
+      this.calling.channel.removeListener('message', message_handler);
     });
   }
 
@@ -720,9 +735,9 @@ export class CallingSignaling extends EventEmitter {
     if ((this.connect_p == null)) {
       this.connect_p = this.calling.connect().then(() => {
         new Promise((resolve, reject) => {
-          return this.connect_fun(this.peer_status, (err, res) => {
+          this.connect_fun(this.peer_status, (err, res) => {
             if (err != null) {
-              return reject(err);
+              reject(err);
             } else {
               if (res != null) {
                 this.init(res);
@@ -733,7 +748,7 @@ export class CallingSignaling extends EventEmitter {
                 return;
               }
 
-              return resolve();
+              resolve();
             }
           });
         });
@@ -755,8 +770,8 @@ export class CallingSignaling extends EventEmitter {
   async close(): Promise<unknown> {
     if(this.connect_p) {
       await this.connect_p;
-      return new Promise((resolve, reject) => {
-        return this.calling.request({
+      new Promise((resolve, reject) => {
+        this.calling.request({
           type: 'room_leave',
           room: this.id
         }, err => {
@@ -770,7 +785,7 @@ export class CallingSignaling extends EventEmitter {
 
           this.emit('closed');
 
-          return resolve();
+          resolve();
         });
       });
     } else {
@@ -797,14 +812,14 @@ export class CallingSignaling extends EventEmitter {
   invite(user: CallingNamespaceUser, data: any): Promise<CallingOutInvitation> {
     if (data == null) { data = {}; }
     return new Promise((resolve, reject) => {
-      return this.calling.request({
+      this.calling.request({
         type: 'invite_send',
         room: this.id,
         user: typeof user === 'string' ? user : user.id,
         data
       }, (err, res) => {
         if (err != null) {
-          return reject(err);
+          reject(err);
         } else {
           if ((res.handle == null)) {
             reject(new Error("Invalid response"));
@@ -812,7 +827,7 @@ export class CallingSignaling extends EventEmitter {
           }
 
           const invitation = new CallingOutInvitation(this.calling, res.handle, user);
-          return resolve(invitation);
+          resolve(invitation);
         }
       });
     });
@@ -821,7 +836,7 @@ export class CallingSignaling extends EventEmitter {
 
   setRoomStatusSafe(key: string, value: any, previous: any): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      return this.calling.request({
+      this.calling.request({
         type: 'room_status',
         room: this.id,
         key,
@@ -837,7 +852,7 @@ export class CallingSignaling extends EventEmitter {
         this.status[key] = value;
         this.emit('status_changed', this.status);
 
-        return resolve();
+        resolve();
       });
     });
   }
@@ -845,7 +860,7 @@ export class CallingSignaling extends EventEmitter {
 
   setRoomStatus(key: string, value: any): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      return this.calling.request({
+      this.calling.request({
         type: 'room_status',
         room: this.id,
         key,
@@ -859,7 +874,7 @@ export class CallingSignaling extends EventEmitter {
         this.status[key] = value;
         this.emit('status_changed', this.status);
 
-        return resolve();
+        resolve();
       });
     });
   }
@@ -955,14 +970,14 @@ export class CallingInInvitation extends EventEmitter {
         case 'invite_cancelled':
           this.cancelled = true;
           this.emit('cancelled');
-          return this.emit('handled', false);
+          this.emit('handled', false);
       }
     };
 
     this.calling.channel.on('message', message_handler);
 
     this.on('handled', () => {
-      return this.calling.channel.removeListener('message', message_handler);
+      this.calling.channel.removeListener('message', message_handler);
     });
 
   }
@@ -971,7 +986,7 @@ export class CallingInInvitation extends EventEmitter {
   signaling(): CallingSignaling {
     return new CallingSignaling(this.calling, (status, cb) => {
       this.emit('handled', true);
-      return this.calling.request({
+      this.calling.request({
         type: 'invite_accept',
         handle: this.handle,
         status
@@ -1025,7 +1040,7 @@ export class CallingOutInvitation {
     this.calling.channel.on('message', message_handler);
 
     const cleanup = () => {
-      return this.calling.channel.removeListener('message', message_handler);
+      this.calling.channel.removeListener('message', message_handler);
     };
 
     this.defer.promise.then(cleanup, cleanup);
@@ -1100,11 +1115,11 @@ export class CallingInvitationRoom extends CallingRoom {
     super(this.invitation.signaling(), options);
 
     this.invitation.on('cancelled', () => {
-      return this.emit('cancelled');
+      this.emit('cancelled');
     });
 
     this.invitation.on('handled', accepted => {
-      return this.emit('handled', accepted);
+      this.emit('handled', accepted);
     });
   }
 
@@ -1129,10 +1144,9 @@ export class CallingPeer extends RemotePeer {
   }
 
 
-  connect(): Promise<unknown> {
-    return this.signaling.accepted().then(() => {
-      return super.connect();
-    });
+  async connect(): Promise<unknown> {
+    await this.signaling.accepted()
+    return super.connect();
   }
 }
 

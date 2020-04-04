@@ -1,9 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import { Stream } from './stream';
 import { Peer } from './peer';
 
@@ -40,7 +34,7 @@ export class MediaDomElement {
     delete this.stream;
 
     // TODO: handle conflict between multiple calls
-    if ((data == null)) {
+    if (data == null) {
       this.dom.src = "";
 
     } else if (data instanceof Stream) {
@@ -80,24 +74,24 @@ export class MediaDomElement {
   }
 
 
-  error(err: Error) {
+  error(err: Error): void {
     // TODO: do more with dom
-    return console.log(err);
+    console.log(err);
   }
 
 
-  clear() {
-    return this.attach();
+  clear(): void {
+    this.attach();
   }
 
 
-  mute(muted?: boolean) {
+  mute(muted?: boolean): void {
     if (muted == null) { muted = true; }
-    return this.dom.muted = muted;
+    this.dom.muted = muted;
   }
 
 
-  toggleMute() {
-    return this.dom.muted = !this.dom.muted;
+  toggleMute(): void {
+    this.dom.muted = !this.dom.muted;
   }
 };

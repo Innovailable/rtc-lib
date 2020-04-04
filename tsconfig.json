@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"declaration": true,
 		"types": [
 			"browserify"
 		],
@@ -8,7 +9,7 @@
 			"dom",
 			"es2020"
 		],
-		"module": "commonjs",
+		"moduleResolution": "node",
 		"noImplicitAny": true,
 		"strict": true,
 		"sourceMap": true

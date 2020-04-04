@@ -1,9 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import { Peer } from './peer';
 import { Stream } from './stream';
 
@@ -78,7 +72,7 @@ export class LocalPeer extends Peer {
       name = Peer.DEFAULT_CHANNEL;
     }
 
-    if ((desc == null)) {
+    if (desc == null) {
       // TODO: default handling
       desc = {
         ordered: true

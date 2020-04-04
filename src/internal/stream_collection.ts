@@ -1,10 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import {Deferred} from './promise';
 import { EventEmitter } from 'events';
 
@@ -66,7 +59,7 @@ export class StreamCollection extends EventEmitter {
     // remove old streams
 
     for(const [name, stream_p] of Object.entries(this.streams)) {
-      if ((data[name] == null)) {
+      if (data[name] == null) {
         // remove
 
         delete this.streams[name];
@@ -85,7 +78,7 @@ export class StreamCollection extends EventEmitter {
       // does stream exist?
 
       const id = data[name];
-      if ((this.streams[name] == null)) {
+      if (this.streams[name] == null) {
         // create stream promise
 
         const defer = new Deferred<Stream>();

@@ -1,10 +1,6 @@
 /*
  * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
  * DS205: Consider reworking code to avoid use of IIFEs
- * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 import { Deferred } from './internal/promise';
@@ -41,7 +37,8 @@ export class DataChannel extends EventEmitter {
    */
 
   constructor(channel: RTCDataChannel, max_buffer: number = 1024*10) {
-      super();
+    super();
+
     this.channel = channel;
     this.max_buffer = max_buffer;
     this._connected = false;
@@ -59,19 +56,19 @@ export class DataChannel extends EventEmitter {
 
     this.channel.onmessage = event => {
       if (!this._connected) {
-        return this._connect_queue.push(event.data);
+        this._connect_queue.push(event.data);
       } else {
-        return this.emit('message', event.data);
+        this.emit('message', event.data);
       }
     };
 
     this.channel.onclose = () => {
-      return this.emit('closed');
+      this.emit('closed');
     };
 
     // TODO: what to do with this?
     this.channel.onerror = err => {
-      return this.emit('error', err);
+      this.emit('error', err);
     };
   }
 
@@ -81,14 +78,14 @@ export class DataChannel extends EventEmitter {
    * @method connect
    * @return {Promise} Promise which resolves as soon as the DataChannel is open
    */
-  connect() {
+  connect(): Promise<unknown> {
     if (this._connected) {
       return Promise.resolve();
     }
 
     this._connected = true;
 
-    for (let data of Array.from(this._connect_queue)) {
+    for (let data of this._connect_queue) {
       this.emit('message', data);
     }
 
@@ -98,7 +95,7 @@ export class DataChannel extends EventEmitter {
   }
 
 
-  close() {
+  close(): Promise<unknown> {
     this.channel.close();
     return Promise.resolve();
   }
@@ -109,7 +106,7 @@ export class DataChannel extends EventEmitter {
    * @method label
    * @return {String} The label
    */
-  label() {
+  label(): string {
     return this.channel.label;
   }
 
@@ -120,7 +117,7 @@ export class DataChannel extends EventEmitter {
    * @param data The data to be transferred
    * @return {Promise} Promise which will be resolved when the data was passed to the native data channel
    *///
-  send(data: any) {
+  send(data: any): Promise<unknown> {
     if (!this._connected) {
       this.connect();
       console.log("Sending without being connected. Please call connect() on the data channel to start using it.");
@@ -130,7 +127,7 @@ export class DataChannel extends EventEmitter {
     this._send_buffer.push([data, defer]);
 
     if (this._send_buffer.length === 1) {
-      this._actualSend();
+      this.actualSend();
     }
 
     return defer.promise;
@@ -142,7 +139,7 @@ export class DataChannel extends EventEmitter {
    * @method _actualSend
    * @private
    */
-  _actualSend() {
+  private actualSend(): void {
     let data, defer;
     if (this.channel.readyState === 'open') {
       // actual sending
@@ -151,19 +148,17 @@ export class DataChannel extends EventEmitter {
         // should we keep sending right now?
         if (this.channel.bufferedAmount >= this.max_buffer) {
           // TODO: less cpu heavy timeout value?
-          setTimeout(this._actualSend.bind(this), 1);
-          return;
+          setTimeout(this.actualSend.bind(this), 1);
         }
 
-        [data, defer] = Array.from(this._send_buffer[0]);
+        [data, defer] = this._send_buffer[0];
 
         try {
           this.channel.send(data);
         } catch (error) {
           // TODO: less cpu heavy and fail after some time?
           // TODO: do not loop endless on fatal errors which do not close the channel
-          setTimeout(this._actualSend.bind(this), 1);
-          return;
+          setTimeout(this.actualSend.bind(this), 1);
         }
 
         defer.resolve();
@@ -173,14 +168,10 @@ export class DataChannel extends EventEmitter {
 
     } else {
       // fail the send promises
-      return (() => {
-        const result = [];
-        while (this._send_buffer.length) {
-          [data, defer] = Array.from(this._send_buffer.shift());
-          result.push(defer.reject(new Error("DataChannel closed")));
-        }
-        return result;
-      })();
+      while (this._send_buffer.length) {
+	[data, defer] = this._send_buffer.shift();
+	defer.reject(new Error("DataChannel closed"));
+      }
     }
   }
 };

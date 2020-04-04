@@ -1,11 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import { Deferred } from './internal/promise';
 import { EventEmitter } from 'events';
 
@@ -137,16 +129,16 @@ export class PeerConnection extends EventEmitter {
     // PeerConnection events
 
     this.pc.onicecandidate = event => {
-      return this.emit('ice_candidate', event.candidate);
+      this.emit('ice_candidate', event.candidate);
     };
 
     this.pc.ontrack = event => {
-      return Array.from(event.streams).map((stream) =>
+      event.streams.map((stream) =>
         this.emit('stream_added', new Stream(stream)));
     };
 
     this.pc.ondatachannel = event => {
-      return this.emit('data_channel_ready', new DataChannel(event.channel));
+      this.emit('data_channel_ready', new DataChannel(event.channel));
     };
 
     //this.pc.onremovestream = function(event) {};
@@ -154,18 +146,18 @@ export class PeerConnection extends EventEmitter {
 
     this.pc.onnegotiationneeded = event => {
       // TODO
-      return console.log('onnegotiationneeded called');
+      console.log('onnegotiationneeded called');
     };
 
     // PeerConnection states
 
     this.pc.oniceconnectionstatechange = () => {
       if (this.pc.iceConnectionState === 'failed') {
-        return this._connectError(new Error("Unable to establish ICE connection"));
+        this._connectError(new Error("Unable to establish ICE connection"));
       } else if (this.pc.iceConnectionState === 'closed') {
-        return this.connect_d.reject(new Error('Connection was closed'));
+        this.connect_d.reject(new Error('Connection was closed'));
       } else if (['connected', 'completed'].includes(this.pc.iceConnectionState)) {
-        return this.connect_d.resolve(null);
+        this.connect_d.resolve(null);
       }
     };
 
@@ -190,12 +182,12 @@ export class PeerConnection extends EventEmitter {
   signaling(data: RTCSessionDescriptionInit) {
     const sdp = new RTCSessionDescription(data);
 
-    return this._setRemoteDescription(sdp).then(() => {
+    this._setRemoteDescription(sdp).then(() => {
       if ((data.type === 'offer') && this.connected) {
         return this._answer();
       }
   }).catch(err => {
-      return this._connectError(err);
+      this._connectError(err);
     });
   }
 
@@ -206,9 +198,9 @@ export class PeerConnection extends EventEmitter {
    * @param {Object} desc The candidate
    */
   addIceCandidate(desc: RTCIceCandidateInit) {
-    if ((desc != null ? desc.candidate : undefined) != null) {
+    if (desc?.candidate != null) {
       const candidate = new RTCIceCandidate(desc);
-      return this.pc.addIceCandidate(candidate);
+      this.pc.addIceCandidate(candidate);
     }
     else {}
   }
@@ -251,10 +243,10 @@ export class PeerConnection extends EventEmitter {
    * @private
    */
   _offer() {
-    return this.pc.createOffer(this._oaOptions()).then(sdp => {
+    this.pc.createOffer(this._oaOptions()).then(sdp => {
       return this._processLocalSdp(sdp);
-  }).catch(err => {
-      return this._connectError(err);
+    }).catch(err => {
+      this._connectError(err);
     });
   }
 
@@ -265,10 +257,10 @@ export class PeerConnection extends EventEmitter {
    * @private
    */
   _answer() {
-    return this.pc.createAnswer(this._oaOptions()).then(sdp => {
+    this.pc.createAnswer(this._oaOptions()).then(sdp => {
       return this._processLocalSdp(sdp);
   }).catch(err => {
-      return this._connectError(err);
+      this._connectError(err);
     });
   }
 
@@ -301,7 +293,7 @@ export class PeerConnection extends EventEmitter {
   _connectError(err: Error) {
     // TODO: better errors
     this.connect_d.reject(err);
-    return this.emit('error', err);
+    this.emit('error', err);
   }
 
 
@@ -311,8 +303,9 @@ export class PeerConnection extends EventEmitter {
    * @param {rtc.Stream} stream The local stream
    */
   addStream(stream: Stream) {
-    return stream.stream.getTracks().map((track) =>
-      this.pc.addTrack(track, stream.stream));
+    for(const track of stream.stream.getTracks()) {
+      this.pc.addTrack(track, stream.stream);
+    }
   }
 
 
@@ -323,7 +316,7 @@ export class PeerConnection extends EventEmitter {
    */
   removeSream(stream: Stream) {
     // TODO
-    //return this.pc.removeStream(stream.stream);
+    //this.pc.removeStream(stream.stream);
   }
 
 
@@ -343,8 +336,8 @@ export class PeerConnection extends EventEmitter {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=964092
       this.no_gc_bugfix.push(channel);
 
-      return channel.onopen = () => {
-        return this.emit('data_channel_ready', new DataChannel(channel));
+      channel.onopen = () => {
+        this.emit('data_channel_ready', new DataChannel(channel));
       };
     }
   }
@@ -378,7 +371,7 @@ export class PeerConnection extends EventEmitter {
    */
   close() {
     this.pc.close();
-    return this.emit('closed');
+    this.emit('closed');
   }
 };
 

@@ -1,11 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import {EventEmitter} from 'events';
 
 export type StreamTrackType = 'audio' | 'video' | 'both';
@@ -85,14 +77,15 @@ export class Stream extends EventEmitter {
    * @param {'audio' | 'video' | 'both'} [type='audio'] The type of tracks
    * @return {Boolean} Whether the tracks are muted
    */
-  muted(type: StreamTrackType = 'audio') {
+  muted(type: StreamTrackType = 'audio'): boolean {
     const tracks = this.getTracks(type);
 
     if (tracks.length < 1) {
       return true;
     }
 
-    return !(tracks[0] != null ? tracks[0].enabled : undefined);
+    const track = tracks[0]
+    return track == null || !track.enabled;
   }
 
 
@@ -127,9 +120,9 @@ export class Stream extends EventEmitter {
       return true;
     }
 
-    const muted = !(tracks[0] != null ? tracks[0].enabled : undefined);
+    const muted = tracks[0].enabled;
 
-    for (let track of Array.from(tracks)) {
+    for (let track of tracks) {
       track.enabled = !muted;
     }
 
@@ -144,7 +137,7 @@ export class Stream extends EventEmitter {
    * @method stop
    */
   stop() {
-    return this.stream.getTracks().forEach((track) => track.stop());
+    this.stream.getTracks().forEach((track) => track.stop());
   }
 
 
@@ -161,7 +154,7 @@ export class Stream extends EventEmitter {
    * @return {rtc.Stream} A clone of the stream
    */
   clone() {
-    if ((this.stream.clone == null)) {
+    if (this.stream.clone == null) {
       throw new Error("Your browser does not support stream cloning. Firefox is expected to implement it in version 47.");
     }
 
@@ -177,7 +170,7 @@ export class Stream extends EventEmitter {
    * @return {Boolean} `true` if cloning is supported, `false` otherwise
    */
   static canClone() {
-    return (MediaStream.prototype.clone != null);
+    return MediaStream.prototype.clone != null;
   }
 
 

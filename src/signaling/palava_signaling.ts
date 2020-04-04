@@ -78,7 +78,7 @@ export class PalavaSignalingPeer extends SignalingPeer {
  * @class rtc.signaling.PalavaSignaling
  * @extends rtc.signaling.Signaling
  */
-exports.PalavaSignaling = class PalavaSignaling extends Signaling {
+export class PalavaSignaling extends Signaling {
 
   channel: Channel;
   room: string;
@@ -120,7 +120,7 @@ exports.PalavaSignaling = class PalavaSignaling extends Signaling {
 
           for (let i in data.peers) {
             data = data.peers[i];
-            peer = new exports.PalavaSignalingPeer(this.channel, data.peer_id, data.status, false);
+            peer = new PalavaSignalingPeer(this.channel, data.peer_id, data.status, false);
             this.peers[data.peer_id] = peer;
             this.emit('peer_joined', peer);
           }
@@ -133,7 +133,7 @@ exports.PalavaSignaling = class PalavaSignaling extends Signaling {
             return;
           }
 
-          peer = new exports.PalavaSignalingPeer(this.channel, data.peer_id, data.status, true);
+          peer = new PalavaSignalingPeer(this.channel, data.peer_id, data.status, true);
           this.peers[data.peer] = peer;
           return this.emit('peer_joined', peer);
       }

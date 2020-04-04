@@ -1,11 +1,3 @@
-/*
- * decaffeinate suggestions:
- * DS001: Remove Babel/TypeScript constructor workaround
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
- */
 import { Peer } from './peer';
 
 import { StreamCollection } from './internal/stream_collection';
@@ -96,7 +88,7 @@ export class RemotePeer extends Peer {
     this.streams_desc = {};
 
     this.stream_collection.on('stream_added', (name, stream) => {
-      return this.emit('stream_added', name, stream);
+      this.emit('stream_added', name, stream);
     });
 
     // channels stuff
@@ -106,17 +98,17 @@ export class RemotePeer extends Peer {
     this.channels_desc = {};
 
     this.channel_collection.on('data_channel_added', (name, channel) => {
-      return this.emit('data_channel_added', name, channel);
+      this.emit('data_channel_added', name, channel);
     });
 
     // resolve streams and data channels
 
     this.peer_connection.on('stream_added', stream => {
-      return this.stream_collection.resolve(stream);
+      this.stream_collection.resolve(stream);
     });
 
     this.peer_connection.on('data_channel_ready', channel => {
-      return this.channel_collection.resolve(channel);
+      this.channel_collection.resolve(channel);
     });
 
     // wire up peer connection signaling
@@ -124,38 +116,38 @@ export class RemotePeer extends Peer {
     this.peer_connection.on('signaling', data => {
       data.streams = this.streams_desc;
       data.channels = this.channels_desc;
-      return this.signaling.send('signaling', data);
+      this.signaling.send('signaling', data);
     });
 
     this.signaling.on('signaling', data => {
       this.stream_collection.update(data.streams);
       this.channel_collection.setRemote(data.channels);
-      return this.peer_connection.signaling(data);
+      this.peer_connection.signaling(data);
     });
 
     this.peer_connection.on('ice_candidate', candidate => {
-      return this.signaling.send('ice_candidate', candidate);
+      this.signaling.send('ice_candidate', candidate);
     });
 
     this.signaling.on('ice_candidate', candidate => {
-      return this.peer_connection.addIceCandidate(candidate);
+      this.peer_connection.addIceCandidate(candidate);
     });
 
     // status handling
  
     this.signaling.on('status_changed', status => {
-      return this.emit('status_changed', status);
+      this.emit('status_changed', status);
     });
 
     // communication
 
     this.signaling.on('message', data => {
-      return this.emit('message', data);
+      this.emit('message', data);
     });
 
     this.signaling.on('left', () => {
       this.peer_connection.close();
-      return this.emit('left');
+      this.emit('left');
     });
 
     // pass on signals
@@ -167,7 +159,7 @@ export class RemotePeer extends Peer {
 
     // we probably want to connect now
 
-    if ((this.options.auto_connect == null) || this.options.auto_connect) {
+    if (this.options.auto_connect == null || this.options.auto_connect) {
       this.connect();
     }
   }
@@ -196,7 +188,7 @@ export class RemotePeer extends Peer {
    * @return {Promise} Promise which will resolved when the connection is established
    */
   connect(): Promise<unknown> {
-    if ((this.connect_p == null)) {
+    if (this.connect_p == null) {
       // wait for streams
 
       const stream_promises = Array<Promise<[string,Stream]>>();
@@ -330,7 +322,7 @@ export class RemotePeer extends Peer {
       name = Peer.DEFAULT_CHANNEL;
     }
 
-    if ((desc == null)) {
+    if (desc == null) {
       // TODO: default handling
       desc = {
         ordered: true
@@ -342,7 +334,13 @@ export class RemotePeer extends Peer {
     return this.channel(name);
   }
 
-
+  // TODO improve jsdoc
+  /**
+   * Checks whether the peer is the local peer. Returns always `false` on this
+   * class.
+   * @method currentFingerprints
+   * @return {Object} Returns fingerprint used in underlying peer connection
+   */
   currentFingerprints(): PeerConnectionFingerprints {
     return this.peer_connection.fingerprints();
   }
