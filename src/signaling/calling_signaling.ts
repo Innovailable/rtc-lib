@@ -27,7 +27,7 @@ export class Calling extends EventEmitter {
   next_tid: number;
   answers: Record<string,Deferred<any>|DataCb>;
   hello_p: Promise<string>;
-  ping_timeout?: NodeJS.Timeout;
+  ping_timeout?: ReturnType<typeof setTimeout>;
   state: CallingState = "idle";
 
   constructor(channel: Channel, room_options: Record<string,any>) {
