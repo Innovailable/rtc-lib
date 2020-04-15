@@ -8,6 +8,7 @@ export * from './data_channel';
 export * from './stream';
 export * from './room';
 export * from './video_element';
+export * from './types';
 
 export * from './signaling';
 

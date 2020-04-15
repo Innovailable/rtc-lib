@@ -4,10 +4,23 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 import { EventEmitter } from 'events';
+import StrictEventEmitter from 'strict-event-emitter-types';
+
+export type TypedEventEmitter<T> = StrictEventEmitter<EventEmitter,T>;
+
+export type InferSignalingPeerCb<cb> = cb extends (peer: infer SP) => void ? SP : never;
+export type InferSignalingPeer<signaling extends Signaling> = signaling["on"] extends (type: "peer_joined", peer: infer SP) => void ? InferSignalingPeerCb<SP> : never;
+type S = Signaling<SignalingPeer>
+type SP = InferSignalingPeer<S>;
 
 /**
  * @module rtc.signaling
  */
+
+export interface SignalingEvents<SP extends SignalingPeer> {
+  peer_joined: (peer: SP) => void;
+  closed: () => void;
+};
 
 /**
  * Concept of a class implementing signaling. Might use a `rtc.signaling.Channel` to abstract the connection to the server.
@@ -17,7 +30,9 @@ import { EventEmitter } from 'events';
  * @extends events.EventEmitter
  * @class rtc.signaling.Signaling
  */
-export class Signaling extends EventEmitter {
+export interface Signaling<SP extends SignalingPeer = SignalingPeer> extends TypedEventEmitter<SignalingEvents<SP>> {
+  // TODO hack used for typing, ignore for now, remove when we got a better idea
+  __peer?: SP;
 
   /**
    * A new peer joined the room
@@ -35,22 +50,30 @@ export class Signaling extends EventEmitter {
    * @method connect
    * @return {Promise} Promise which is resolved when the connection is established
    */
-  connect() : Promise<unknown> { throw new Error("Not implemented"); }
+  connect() : Promise<void>;
 
   /**
    * Closes the connection to the signaling server
    * @method close
    */
-  close() { throw new Error("Not implemented"); }
+  close(): void;
 
   /**
    * Sets the local status object and broadcasts the change to the peers
    * @method setStatus
    * @param {Object} obj New status object
    */
-  setStatus(obj: Record<string,any>) { throw new Error("Not implemented"); }
+  setStatus(obj: Record<string,any>): Promise<void>;
 };
 
+
+export interface SignalingPeerEvents {
+  left: () => void;
+  signaling: (data: any) => void;
+  message: (data: any) => void;
+  ice_candidate: (data: any) => void;
+  status_changed: (status: Record<string,any>) => void;
+};
 
 /**
  * Concept of a class implementing a signaling connection to a peer.
@@ -60,10 +83,7 @@ export class Signaling extends EventEmitter {
  * @extends events.EventEmitter
  * @class rtc.signaling.SignalingPeer
  */
-export class SignalingPeer extends EventEmitter {
-  // TODO
-  status!: Record<string,any>
-
+export interface SignalingPeer extends TypedEventEmitter<SignalingPeerEvents> {
   /**
    * The remote peer left the room
    * @event left
@@ -88,6 +108,7 @@ export class SignalingPeer extends EventEmitter {
    * @type Object
    * @readonly
    */
+  status: Record<string,any>
 
   /**
    * Whether the local user was in the room before the remote user (used to determine which peer will initiate the connection)
@@ -95,6 +116,9 @@ export class SignalingPeer extends EventEmitter {
    * @type Boolean
    * @readonly
    */
+  first: boolean;
+
+  id: string;
 
   /**
    * Sends the event with the given payload to the remote peer
@@ -103,9 +127,13 @@ export class SignalingPeer extends EventEmitter {
    * @param {Object} data The payload of the event
    * @return {Promise} Promise which will be resolved once the message is sent
    */
-  send(event: string, data: any) { if (data == null) { data = {}; } throw new Error("Not implemented"); }
+  send(event: string, data: any): Promise<void>;
 };
 
+export interface ChannelEvents {
+  message: (data: any) => void;
+  closed: () => void;
+}
 
 /**
  * Concept of a class implementing a signaling channel. Might be used by signaling implementations to connect to a signaling server.
@@ -115,7 +143,7 @@ export class SignalingPeer extends EventEmitter {
  * @extends events.EventEmitter
  * @class rtc.signaling.Channel
  */
-export class Channel extends EventEmitter {
+export interface Channel extends TypedEventEmitter<ChannelEvents> {
 
   /**
    * A message was received from the signaling server
@@ -133,7 +161,7 @@ export class Channel extends EventEmitter {
    * @method connect
    * @return {Promise} Promise which is resolved when the connection is established
    */
-  connect(): Promise<unknown> { throw new Error("Not implemented"); }
+  connect(): Promise<void>;
 
   /**
    * Sends a message to the signaling server
@@ -141,11 +169,11 @@ export class Channel extends EventEmitter {
    * @param {Object} msg The message to send
    * @return {Promise} Promise which is resolved when the message is sent
    */
-  send(msg: any): Promise<unknown> { throw new Error("Not implemented"); }
+  send(msg: any): Promise<void>;
 
   /**
    * Closes the connection to the signaling server
    * @method close
    */
-  close(): Promise<unknown> { throw new Error("Not implemented"); }
+  close(): Promise<void>;
 };

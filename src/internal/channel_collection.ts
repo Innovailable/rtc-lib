@@ -15,8 +15,8 @@ export class ChannelCollection extends EventEmitter {
   defers: Record<string,Deferred<DataChannel>>;
   pending: Record<string,DataChannel>;
 
-  wait_d: Deferred;
-  wait_p: Promise<unknown>;
+  wait_d: Deferred<void>;
+  wait_p: Promise<void>;
 
   local?: Record<string,RTCSessionDescriptionInit>;
   remote?: Record<string,RTCSessionDescriptionInit>;
@@ -36,7 +36,7 @@ export class ChannelCollection extends EventEmitter {
     this.defers = {};
     this.pending = {};
 
-    this.wait_d = new Deferred();
+    this.wait_d = new Deferred<void>();
     this.wait_p = this.wait_d.promise;
   }
 
@@ -125,7 +125,7 @@ export class ChannelCollection extends EventEmitter {
 
     // we should be able to get channels from now on
 
-    this.wait_d.resolve(null);
+    this.wait_d.resolve();
   }
 
 

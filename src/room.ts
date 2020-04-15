@@ -7,10 +7,12 @@ import { RemotePeer } from './remote_peer';
 import { LocalPeer } from './local_peer';
 import { PeerConnection } from './peer_connection';
 
-import { Signaling, SignalingPeer } from './signaling/signaling';
+import { Signaling, SignalingPeer, InferSignalingPeer } from './types';
 import { Peer } from './peer';
 
 export type RoomState = "idle" | "connecting" | "connected" | "closed" | "failed";
+
+type Test = InferSignalingPeer<Signaling>;
 
 /**
  * @module rtc
@@ -27,12 +29,12 @@ export type RoomState = "idle" | "connecting" | "connected" | "closed" | "failed
  * @param {String} [options.stun] The URI of the STUN server to use
  * @param {rtc.LocalPeer} [options.local] The local user
  */
-export class Room extends EventEmitter {
-  signaling: Signaling;
+export class Room<SP extends SignalingPeer = SignalingPeer, S extends Signaling<SP> = Signaling<SP>> extends EventEmitter {
+  signaling: S;
   options: Record<string,any>
   local: LocalPeer;
   peers: Record<string,RemotePeer>;
-  join_p?: Promise<unknown>;
+  join_p?: Promise<void>;
   state: RoomState = "idle";
 
   /**
@@ -71,17 +73,14 @@ export class Room extends EventEmitter {
    * @type rtc.LocalPeer
    */
 
-  constructor(signaling: Signaling | string, options: Record<string,any>) {
+  constructor(signaling: S, options: Record<string,any>) {
       super();
     // turn signaling into acctual signaling if needed
     if (options == null) { options = {}; }
     this.options = options;
-    if (typeof signaling === 'string') {
-      const channel = new WebSocketChannel(signaling);
-      this.signaling = new MucSignaling(channel);
-    } else {
-      this.signaling = signaling;
-    }
+    this.signaling = signaling;
+
+    signaling.on("peer_joined", () => null); 
 
     this.local = this.options.local || new LocalPeer();
 
@@ -178,7 +177,7 @@ export class Room extends EventEmitter {
    * @param {rtc.PeerConnection} pc The PeerConnection to the peer
    * @param {rtc.SignalingPeer} signaling_peer The signaling connection to the peer
    */
-  createPeer(pc: PeerConnection, signaling_peer: SignalingPeer): RemotePeer {
+  createPeer(pc: PeerConnection, signaling_peer: SP): RemotePeer {
     return new RemotePeer(pc, signaling_peer, this.local, this.options);
   }
 

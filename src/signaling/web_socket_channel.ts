@@ -6,7 +6,8 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-import { Channel } from './signaling';
+import { EventEmitter } from 'events';
+import { Channel } from '../types';
 
 /**
  * @module rtc.signaling
@@ -15,10 +16,10 @@ import { Channel } from './signaling';
  * @class rtc.signaling.WebSocketChannel
  * @extends rtc.signaling.Channel
  */
-export class WebSocketChannel extends Channel {
+export class WebSocketChannel extends EventEmitter implements Channel {
 
   address: string;
-  connect_p?: Promise<unknown>;
+  connect_p?: Promise<void>;
   socket?: WebSocket;
 
   constructor(address: string, ...parts: string[]) {
@@ -46,7 +47,7 @@ export class WebSocketChannel extends Channel {
 
         socket.onopen = () => {
           this.socket = socket;
-          return resolve(true);
+          return resolve();
         };
 
         socket.onerror = err => {

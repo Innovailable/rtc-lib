@@ -2,7 +2,7 @@ import { Peer } from './peer';
 
 import { StreamCollection } from './internal/stream_collection';
 import { ChannelCollection } from './internal/channel_collection';
-import { SignalingPeer } from './signaling/signaling';
+import { SignalingPeer } from './types';
 import { PeerConnection, PeerConnectionFingerprints } from './peer_connection'
 import { LocalPeer } from './local_peer'
 import { Stream } from './stream'
@@ -23,10 +23,10 @@ import { DataChannel } from './data_channel'
  * @param {rtc.LocalPeer} local The local peer
  * @param {Object} options The options object as passed to `Room`
  */
-export class RemotePeer extends Peer {
+export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
 
   peer_connection: PeerConnection;
-  signaling: SignalingPeer;
+  signaling: S;
   local: LocalPeer;
   options: Record<string,any>;
   private_streams: Record<string,Promise<Stream>>;
@@ -38,7 +38,7 @@ export class RemotePeer extends Peer {
   channel_collection: ChannelCollection;
   channels: Record<string,Promise<DataChannel>>
   channels_desc: Record<string,any>;
-  connect_p?: Promise<unknown>;
+  connect_p?: Promise<void>;
 
   /**
    * Message received from peer through signaling
@@ -71,7 +71,7 @@ export class RemotePeer extends Peer {
    * @type rtc.signaling.SignalingPeer
    */
 
-  constructor(peer_connection: PeerConnection, signaling: SignalingPeer, local: LocalPeer, options: Record<string,any>) {
+  constructor(peer_connection: PeerConnection, signaling: S, local: LocalPeer, options: Record<string,any>) {
       super();
 
     // create streams
@@ -177,8 +177,8 @@ export class RemotePeer extends Peer {
    * @param data The payload
    * @return {Promise} Promise which is resolved when the data was sent
    */
-  message(data: any): void {
-    this.signaling.send('message', data);
+  message(data: any): Promise<void> {
+    return this.signaling.send('message', data);
   }
 
 
@@ -187,7 +187,7 @@ export class RemotePeer extends Peer {
    * @method connect
    * @return {Promise} Promise which will resolved when the connection is established
    */
-  connect(): Promise<unknown> {
+  connect(): Promise<void> {
     if (this.connect_p == null) {
       // wait for streams
 
@@ -243,8 +243,7 @@ export class RemotePeer extends Peer {
    * @param {String} [name='stream'] Name of the stream
    * @return {Promise -> rtc.Stream} Promise of the stream
    */
-  stream(name: string): Promise<Stream> {
-    if (name == null) { name = Peer.DEFAULT_STREAM; }
+  stream(name: string = Peer.DEFAULT_STREAM): Promise<Stream> {
     return this.stream_collection.get(name);
   }
 
@@ -259,7 +258,24 @@ export class RemotePeer extends Peer {
    * @param {Promise -> rtc.Stream | rtc.Stream | Object} stream The stream, a promise to the stream or the configuration to create a stream with `rtc.Stream.createStream()`
    * @return {Promise -> rtc.Stream} Promise of the stream which was added
    */
-  addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream> {
+
+  addStream(obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>;
+  addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>
+
+  addStream(a: string | Stream | Promise<Stream> | MediaStreamConstraints, b?: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream> {
+    let name: string;
+    let obj: Stream | Promise<Stream> | MediaStreamConstraints;
+
+    // name can be omitted ... once
+    if (typeof a === 'string') {
+      name = a;
+      obj = b!;
+    } else {
+      name = Peer.DEFAULT_STREAM;
+      obj = a;
+    }
+
+
     if (!(this.options.auto_connect === false)) {
       return Promise.reject("Unable to add streams directly to remote peers without 'auto_connect' option set to 'false'");
     }
@@ -270,12 +286,6 @@ export class RemotePeer extends Peer {
       this.private_streams[name] = stream_p;
       return stream_p;
     };
-
-    // name can be omitted ... once
-    if (typeof name !== 'string') {
-      obj = name;
-      name = Peer.DEFAULT_STREAM;
-    }
 
     if ('then' in obj) {
       // it is a promise
@@ -297,8 +307,7 @@ export class RemotePeer extends Peer {
    * @param {String} [name='data'] Name of the data channel
    * @return {Promise -> rtc.DataChannel} Promise of the data channel
    */
-  channel(name: string): Promise<DataChannel> {
-    if (name == null) { name = Peer.DEFAULT_CHANNEL; }
+  channel(name: string = Peer.DEFAULT_CHANNEL): Promise<DataChannel> {
     return this.channel_collection.get(name);
   }
 
@@ -312,7 +321,10 @@ export class RemotePeer extends Peer {
    * @param {String} [name='data'] Name of the data channel
    * @param {Object} [desc={ordered: true}] Options passed to `RTCDataChannel.createDataChannel()`
    */
-  addDataChannel(name: string, desc: RTCDataChannelInit): Promise<DataChannel> {
+  addDataChannel(desc?: RTCDataChannelInit): Promise<DataChannel>;
+  addDataChannel(name: string, desc?: RTCDataChannelInit): Promise<DataChannel>;
+
+  addDataChannel(name?: string | RTCDataChannelInit, desc?: RTCDataChannelInit): Promise<DataChannel> {
     if (!(this.options.auto_connect === false)) {
       return Promise.reject("Unable to add channels directly to remote peers without 'auto_connect' option set to 'false'");
     }

@@ -13,9 +13,9 @@ import { RemotePeer } from '../remote_peer';
 import { LocalPeer } from '../local_peer';
 import { PeerConnection } from '../peer_connection';
 
-import { Channel } from './signaling';
+import { Channel, Signaling, SignalingPeer } from '../types';
 
-type CallingStatus = Record<string,any>;
+export type CallingStatus = Record<string,any>;
 type DataCb = (error: Error | undefined, data?: any) => void;
 
 export type CallingState = "idle" | "connecting" | "connected" | "closed" | "failed";
@@ -109,7 +109,7 @@ export class Calling extends EventEmitter {
   }
 
 
-  connect(): Promise<unknown> {
+  connect(): Promise<void> {
     if(this.state === "idle") {
       this.setState("connecting");
     }
@@ -144,14 +144,14 @@ export class Calling extends EventEmitter {
       this.answers[msg.tid] = cb;
       return;
     } else {
-      const defer = new Deferred();
+      const defer = new Deferred<void>();
       this.answers[msg.tid] = defer;
       return defer.promise;
     }
   }
 
 
-  ping(): Promise<unknown> {
+  ping(): Promise<void> {
     return this.request({
       type: 'ping'
     });
@@ -201,7 +201,7 @@ export class Calling extends EventEmitter {
   }
 
 
-  register(namespace: string): Promise<unknown> {
+  register(namespace: string): Promise<void> {
     return this.request({
       type: 'ns_user_register',
       namespace
@@ -209,7 +209,7 @@ export class Calling extends EventEmitter {
   }
 
 
-  unregister(namespace: string): Promise<unknown> {
+  unregister(namespace: string): Promise<void> {
     return this.request({
       type: 'ns_user_unregister',
       namespace
@@ -217,13 +217,13 @@ export class Calling extends EventEmitter {
   }
 
 
-  room(room: string, options?: Record<string,any>): CallingRoom {
+  room(room?: string, options?: Record<string,any>): CallingRoom {
     const signaling = this.room_signaling(room);
     return new CallingRoom(signaling, options || this.room_options || {});
   }
 
 
-  room_signaling(room: string): CallingSignaling {
+  room_signaling(room?: string): CallingSignaling {
     return new CallingSignaling(this, (status: Record<string,any>, cb: (test: any) => void) => {
       return this.request({
         type: 'room_join',
@@ -234,7 +234,7 @@ export class Calling extends EventEmitter {
   }
 
 
-  setStatus(status: Record<string,any>): Promise<unknown> {
+  setStatus(status: Record<string,any>): Promise<void> {
     return this.request({
       type: 'status',
       status
@@ -419,7 +419,7 @@ export class CallingNamespace extends EventEmitter {
 
           if ((msg.pending != null) && (msg.pending === false)) {
             peer.pending = false;
-            peer.accepted_d.resolve(null);
+            peer.accepted_d.resolve();
 
             this.emit('room_changed', room);
             this.emit('peer_accepted', peer);
@@ -556,7 +556,7 @@ export class CallingNamespaceRoomPeer extends EventEmitter {
   id: string;
   status: CallingStatus;
   pending: boolean;
-  accepted_d: Deferred;
+  accepted_d: Deferred<void>;
 
   constructor(id: string, status: Record<string,any>, pending: boolean) {
       super();
@@ -564,10 +564,10 @@ export class CallingNamespaceRoomPeer extends EventEmitter {
     this.id = id;
     this.status = status;
     this.pending = pending;
-    this.accepted_d = new Deferred();
+    this.accepted_d = new Deferred<void>();
 
     if (!this.pending) {
-      this.accepted_d.resolve(null);
+      this.accepted_d.resolve();
     }
 
     this.on('left', () => {
@@ -582,7 +582,7 @@ export class CallingNamespaceRoomPeer extends EventEmitter {
 }
 
 
-export class CallingSignaling extends EventEmitter {
+export class CallingSignaling extends EventEmitter implements Signaling<CallingSignalingPeer> {
 
   id?: string;
   calling: Calling;
@@ -591,7 +591,7 @@ export class CallingSignaling extends EventEmitter {
   peer_status: CallingStatus;
   peers: Record<string,CallingSignalingPeer>
   initialized: boolean;
-  connect_p?: Promise<unknown>;
+  connect_p?: Promise<void>;
 
   constructor(calling: Calling, connect_fun: (peer_status: Record<string,any>, cb: DataCb) => void) {
       super();
@@ -673,7 +673,7 @@ export class CallingSignaling extends EventEmitter {
 
           if ((msg.pending != null) && (msg.pending === false)) {
             peer.pending = false;
-            peer.accepted_d.resolve(null);
+            peer.accepted_d.resolve();
 
             this.emit('peer_accepted');
             peer.emit('accepted');
@@ -731,7 +731,7 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  connect(): Promise<unknown> {
+  connect(): Promise<void> {
     if ((this.connect_p == null)) {
       this.connect_p = this.calling.connect().then(() => {
         new Promise((resolve, reject) => {
@@ -767,7 +767,7 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  async close(): Promise<unknown> {
+  async close(): Promise<void> {
     if(this.connect_p) {
       await this.connect_p;
       new Promise((resolve, reject) => {
@@ -794,7 +794,7 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  setStatus(status: Record<string,any>): Promise<unknown> {
+  setStatus(status: Record<string,any>): Promise<void> {
     this.peer_status = status;
 
     if (this.connect_p != null) {
@@ -809,13 +809,14 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  invite(user: CallingNamespaceUser, data: any): Promise<CallingOutInvitation> {
-    if (data == null) { data = {}; }
+  invite(user: CallingNamespaceUser | string, data: any = {}): Promise<CallingOutInvitation> {
+    const user_id = typeof user === "string" ? user : user.id;
+
     return new Promise((resolve, reject) => {
       this.calling.request({
         type: 'invite_send',
         room: this.id,
-        user: typeof user === 'string' ? user : user.id,
+        user: user_id,
         data
       }, (err, res) => {
         if (err != null) {
@@ -826,7 +827,7 @@ export class CallingSignaling extends EventEmitter {
             return;
           }
 
-          const invitation = new CallingOutInvitation(this.calling, res.handle, user);
+          const invitation = new CallingOutInvitation(this.calling, res.handle, user_id);
           resolve(invitation);
         }
       });
@@ -834,7 +835,7 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  setRoomStatusSafe(key: string, value: any, previous: any): Promise<unknown> {
+  setRoomStatusSafe(key: string, value: any, previous: any): Promise<void> {
     return new Promise((resolve, reject) => {
       this.calling.request({
         type: 'room_status',
@@ -858,7 +859,7 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  setRoomStatus(key: string, value: any): Promise<unknown> {
+  setRoomStatus(key: string, value: any): Promise<void> {
     return new Promise((resolve, reject) => {
       this.calling.request({
         type: 'room_status',
@@ -880,7 +881,7 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  register(namespace: string): Promise<unknown> {
+  register(namespace: string): Promise<void> {
     return this.calling.request({
       type: 'ns_room_register',
       namespace,
@@ -889,7 +890,7 @@ export class CallingSignaling extends EventEmitter {
   }
 
 
-  unregister(namespace: string): Promise<unknown> {
+  unregister(namespace: string): Promise<void> {
     return this.calling.request({
       type: 'ns_room_unregister',
       namespace,
@@ -899,14 +900,14 @@ export class CallingSignaling extends EventEmitter {
 }
 
 
-export class CallingSignalingPeer extends EventEmitter {
+export class CallingSignalingPeer extends EventEmitter implements SignalingPeer {
 
   room: CallingSignaling;
   id: string;
   status: CallingStatus;
   pending: boolean;
   first: boolean;
-  accepted_d: Deferred;
+  accepted_d: Deferred<void>;
 
   constructor(room: CallingSignaling, id: string, status: Record<string,any>, pending: boolean, first: boolean) {
       super();
@@ -916,21 +917,21 @@ export class CallingSignalingPeer extends EventEmitter {
     this.status = status;
     this.pending = pending;
     this.first = first;
-    this.accepted_d = new Deferred();
+    this.accepted_d = new Deferred<void>();
 
     if (!this.pending) {
-      this.accepted_d.resolve(null);
+      this.accepted_d.resolve();
     }
 
   }
 
 
-  accepted(): Promise<unknown> {
+  accepted(): Promise<void> {
     return this.accepted_d.promise;
   }
 
 
-  send(event: string, data: any): Promise<unknown> {
+  send(event: string, data: any): Promise<void> {
     return this.room.calling.request({
       type: 'room_peer_to',
       room: this.room.id,
@@ -995,7 +996,7 @@ export class CallingInInvitation extends EventEmitter {
   }
 
 
-  deny(): Promise<unknown> {
+  deny(): Promise<void> {
     this.emit('handled', false);
     return this.calling.request({
       type: 'invite_deny',
@@ -1009,15 +1010,15 @@ export class CallingOutInvitation {
 
   calling: Calling;
   handle: string;
-  user: CallingNamespaceUser;
+  user: string;
   defer: Deferred<boolean>;
   pending: boolean;
 
-  constructor(calling: Calling, handle: string, user: CallingNamespaceUser) {
+  constructor(calling: Calling, handle: string, user: string) {
     this.calling = calling;
     this.handle = handle;
     this.user = user;
-    this.defer = new Deferred();
+    this.defer = new Deferred<boolean>();
     this.pending = true;
 
     const message_handler = (msg: any) => {
@@ -1048,12 +1049,12 @@ export class CallingOutInvitation {
   }
 
 
-  response(): Promise<unknown> {
+  response(): Promise<boolean> {
     return this.defer.promise;
   }
 
 
-  cancel(): Promise<unknown> {
+  cancel(): Promise<void> {
     this.pending = false;
 
     return this.calling.request({
@@ -1066,10 +1067,9 @@ export class CallingOutInvitation {
 }
 
 
-export class CallingRoom extends Room {
+export class CallingRoom extends Room<CallingSignalingPeer,CallingSignaling> {
 
   // TODO
-  signaling!: CallingSignaling;
   peers!: Record<string,CallingPeer>;
 
   constructor(signaling: CallingSignaling, options: Record<string,any>) {
@@ -1083,17 +1083,17 @@ export class CallingRoom extends Room {
   }
 
 
-  invite(user: CallingNamespaceUser, data: any): Promise<unknown> {
+  invite(user: CallingNamespaceUser, data: any): Promise<CallingOutInvitation> {
     return this.signaling.invite(user, data);
   }
 
 
-  register(nsid: string): Promise<unknown> {
+  register(nsid: string): Promise<void> {
     return this.signaling.register(nsid);
   }
 
 
-  unregister(nsid: string): Promise<unknown> {
+  unregister(nsid: string): Promise<void> {
     return this.signaling.unregister(nsid);
   }
 }
@@ -1129,7 +1129,7 @@ export class CallingInvitationRoom extends CallingRoom {
   }
 
 
-  deny(): Promise<unknown> {
+  deny(): Promise<void> {
     return this.invitation.deny();
   }
 }
@@ -1144,7 +1144,7 @@ export class CallingPeer extends RemotePeer {
   }
 
 
-  async connect(): Promise<unknown> {
+  async connect(): Promise<void> {
     await this.signaling.accepted()
     return super.connect();
   }

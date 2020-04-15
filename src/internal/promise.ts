@@ -32,7 +32,7 @@
  * The promise which will get resolved or rejected by this deferred
  * @property {Promise} promise
  */
-export class Deferred<T=unknown> {
+export class Deferred<T> {
   promise: Promise<T>;
   // TODO
   resolve!: (data: T | PromiseLike<T>) => void;

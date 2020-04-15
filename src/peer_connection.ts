@@ -64,7 +64,7 @@ export class PeerConnection extends EventEmitter {
   options: any;
   no_gc_bugfix: Array<RTCDataChannel>;
   pc: RTCPeerConnection;
-  connect_d: Deferred<null>;
+  connect_d: Deferred<void>;
   connected: boolean;
   // TODO
   signaling_pending: Array<any>;
@@ -157,7 +157,7 @@ export class PeerConnection extends EventEmitter {
       } else if (this.pc.iceConnectionState === 'closed') {
         this.connect_d.reject(new Error('Connection was closed'));
       } else if (['connected', 'completed'].includes(this.pc.iceConnectionState)) {
-        this.connect_d.resolve(null);
+        this.connect_d.resolve();
       }
     };
 
@@ -348,7 +348,7 @@ export class PeerConnection extends EventEmitter {
    * @method connect
    * @return {Promise} Promise which will be resolved once the connection is established
    */
-  connect() {
+  connect(): Promise<void> {
     if (!this.connected) {
       if (this.offering) {
         // we are starting the process

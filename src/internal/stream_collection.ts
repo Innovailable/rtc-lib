@@ -18,8 +18,8 @@ export class StreamCollection extends EventEmitter {
   _waiting: Record<string,string>;
   _pending: Record<string,Stream>;
 
-  wait_d: Deferred;
-  wait_p: Promise<unknown>;
+  wait_d: Deferred<void>;
+  wait_p: Promise<void>;
 
   /**
    * A new stream was added to the collection
@@ -109,7 +109,7 @@ export class StreamCollection extends EventEmitter {
       }
     }
 
-    this.wait_d.resolve(null);
+    this.wait_d.resolve();
   }
 
 

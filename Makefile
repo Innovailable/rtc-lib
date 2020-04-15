@@ -71,7 +71,7 @@ compile: $(SOURCES) node_modules Makefile
 pack: compile
 	npm pack
 
-publish: dist
+publish: pack
 	npm publish
 
 .PHONY: all compile pack min clean doc test karma init example

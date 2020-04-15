@@ -78,7 +78,7 @@ export class DataChannel extends EventEmitter {
    * @method connect
    * @return {Promise} Promise which resolves as soon as the DataChannel is open
    */
-  connect(): Promise<unknown> {
+  connect(): Promise<void> {
     if (this._connected) {
       return Promise.resolve();
     }
@@ -95,7 +95,7 @@ export class DataChannel extends EventEmitter {
   }
 
 
-  close(): Promise<unknown> {
+  close(): Promise<void> {
     this.channel.close();
     return Promise.resolve();
   }
@@ -117,13 +117,13 @@ export class DataChannel extends EventEmitter {
    * @param data The data to be transferred
    * @return {Promise} Promise which will be resolved when the data was passed to the native data channel
    *///
-  send(data: any): Promise<unknown> {
+  send(data: any): Promise<void> {
     if (!this._connected) {
       this.connect();
       console.log("Sending without being connected. Please call connect() on the data channel to start using it.");
     }
 
-    const defer = new Deferred();
+    const defer = new Deferred<void>();
     this._send_buffer.push([data, defer]);
 
     if (this._send_buffer.length === 1) {

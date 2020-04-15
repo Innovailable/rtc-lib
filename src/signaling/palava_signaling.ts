@@ -5,8 +5,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
+import { EventEmitter } from 'events';
 import { Deferred } from '../internal/promise';
-import { Signaling, SignalingPeer, Channel } from './signaling';
+import { Signaling, SignalingPeer, Channel } from '../types';
 
 
 /**
@@ -18,7 +19,7 @@ import { Signaling, SignalingPeer, Channel } from './signaling';
  * @class rtc.signaling.PalavaSignalingPeer
  * @extends rtc.signaling.SignalingPeer
  */
-export class PalavaSignalingPeer extends SignalingPeer {
+export class PalavaSignalingPeer extends EventEmitter implements SignalingPeer {
 
   channel: Channel;
   id: string;
@@ -78,15 +79,15 @@ export class PalavaSignalingPeer extends SignalingPeer {
  * @class rtc.signaling.PalavaSignaling
  * @extends rtc.signaling.Signaling
  */
-export class PalavaSignaling extends Signaling {
+export class PalavaSignaling extends EventEmitter implements Signaling<PalavaSignalingPeer> {
 
   channel: Channel;
   room: string;
   status: Record<string,any>;
   peers: Record<string,PalavaSignalingPeer>;
   joined: boolean;
-  join_p?: Promise<unknown>;
-  connect_p?: Promise<unknown>;
+  join_p?: Promise<void>;
+  connect_p?: Promise<void>;
 
   constructor(channel: Channel, room: string, status: Record<string,any>) {
       super();
@@ -97,7 +98,7 @@ export class PalavaSignaling extends Signaling {
     this.peers = {};
     this.joined = false;
 
-    const join_d = new Deferred();
+    const join_d = new Deferred<void>();
     this.join_p = join_d.promise;
 
     this.channel.on('closed', () => {
@@ -125,7 +126,7 @@ export class PalavaSignaling extends Signaling {
             this.emit('peer_joined', peer);
           }
 
-          return join_d.resolve(null);
+          return join_d.resolve();
 
         case 'new_peer':
           if ((data.peer_id == null)) {
@@ -156,7 +157,7 @@ export class PalavaSignaling extends Signaling {
   }
 
 
-  set_status(status: Record<string,any>) {
+  setStatus(status: Record<string,any>) {
     return this.channel.send({
       event: 'update_status',
       status

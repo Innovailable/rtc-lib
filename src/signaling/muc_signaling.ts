@@ -6,7 +6,7 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 import { Deferred } from '../internal/promise';
-import { Signaling, SignalingPeer, Channel } from './signaling';
+import { Signaling, SignalingPeer, Channel } from '../types';
 import { EventEmitter } from 'events';
 
 
@@ -28,7 +28,7 @@ import { EventEmitter } from 'events';
  * @param {Object} status The status of the remote peer
  * @param {Boolean} first Whether the local peer was in the room before the remote peer
  */
-export class MucSignalingPeer extends SignalingPeer {
+export class MucSignalingPeer extends EventEmitter implements SignalingPeer {
   channel: Channel;
   id: string;
   status: Record<string,any>;
@@ -65,15 +65,18 @@ export class MucSignalingPeer extends SignalingPeer {
             return;
           }
 
-          return this.emit(data.event, data.data);
+          this.emit(data.event, data.data);
+	  return;
 
         case 'peer_left':
           this.emit('left');
-          return this.channel.removeListener('message', recv_msg);
+          this.channel.removeListener('message', recv_msg);
+	  return;
 
         case 'peer_status':
           this.status = data.status;
-          return this.emit('status_changed', this.status);
+          this.emit('status_changed', this.status);
+	  return;
       }
     };
 
@@ -173,11 +176,11 @@ export class MucSignalingPeer extends SignalingPeer {
  * @constructor
  * @param {rtc.signaling.Channel} channel The channel to the signaling server
  */
-export class MucSignaling extends Signaling {
+export class MucSignaling extends EventEmitter implements Signaling<MucSignalingPeer> {
 
   channel: Channel;
-  join_p: Promise<unknown>;
-  connect_p?: Promise<unknown>;
+  join_p: Promise<void>;
+  connect_p?: Promise<void>;
   status: Record<string,any>;
   id?: string;
 
@@ -193,7 +196,7 @@ export class MucSignaling extends Signaling {
     this.channel = channel;
     this.status = {};
 
-    const join_d = new Deferred();
+    const join_d = new Deferred<void>();
     this.join_p = join_d.promise;
 
     this.channel.on('closed', () => {
@@ -222,7 +225,7 @@ export class MucSignaling extends Signaling {
 
           this.id = data.id;
 
-          return join_d.resolve(null);
+          return join_d.resolve();
 
         case 'peer_joined':
           if ((data.peer == null)) {
@@ -263,11 +266,13 @@ export class MucSignaling extends Signaling {
           status
         });
       });
+    } else {
+      return Promise.resolve();
     }
   }
 
 
-  leave() {
+  close() {
     return this.channel.send({
       type: 'leave'
     }).then(() => {
