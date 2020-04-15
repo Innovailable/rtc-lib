@@ -144,10 +144,10 @@ export class PeerConnection extends EventEmitter {
     //this.pc.onremovestream = function(event) {};
       // TODO
 
-    this.pc.onnegotiationneeded = event => {
-      // TODO
-      console.log('onnegotiationneeded called');
-    };
+    //this.pc.onnegotiationneeded = event => {
+      //// TODO
+      //console.log('onnegotiationneeded called ...');
+    //};
 
     // PeerConnection states
 
@@ -179,16 +179,29 @@ export class PeerConnection extends EventEmitter {
    * @method signaling
    * @param {Object} data The signaling information
    *///
-  signaling(data: RTCSessionDescriptionInit) {
+  async signaling(data: RTCSessionDescriptionInit) {
     const sdp = new RTCSessionDescription(data);
 
-    this._setRemoteDescription(sdp).then(() => {
+    try {
+      if(data.type === 'offer' && this.pc.signalingState !== 'stable') {
+        if(this.offering) {
+          return;
+        }
+
+        await Promise.all([
+          this.pc.setLocalDescription({ type: 'rollback' }),
+          this.pc.setRemoteDescription(sdp),
+        ]);
+      } else {
+        await this.pc.setRemoteDescription(sdp);
+      }
+
       if ((data.type === 'offer') && this.connected) {
         return this._answer();
       }
-  }).catch(err => {
+    } catch(err) {
       this._connectError(err);
-    });
+    }
   }
 
 
@@ -225,29 +238,17 @@ export class PeerConnection extends EventEmitter {
 
 
   /**
-   * Set the remote description
-   * @method _setRemoteDescription
-   * @private
-   * @param {Object} sdp The remote SDP
-   * @return {Promise} Promise which will be resolved once the remote description was set successfully
-   */
-  _setRemoteDescription(sdp: RTCSessionDescriptionInit) {
-    const description = new RTCSessionDescription(sdp);
-    return this.pc.setRemoteDescription(sdp);
-  }
-
-
-  /**
    * Create offer, set it on local description and emit it
    * @method _offer
    * @private
    */
-  _offer() {
-    this.pc.createOffer(this._oaOptions()).then(sdp => {
+  async _offer() {
+    try {
+      const sdp = await this.pc.createOffer(this._oaOptions());
       return this._processLocalSdp(sdp);
-    }).catch(err => {
+    } catch(err) {
       this._connectError(err);
-    });
+    }
   }
 
 
@@ -256,12 +257,13 @@ export class PeerConnection extends EventEmitter {
    * @method _offer
    * @private
    */
-  _answer() {
-    this.pc.createAnswer(this._oaOptions()).then(sdp => {
+  async _answer() {
+    try {
+      const sdp = await this.pc.createAnswer(this._oaOptions());
       return this._processLocalSdp(sdp);
-  }).catch(err => {
+    } catch(err) {
       this._connectError(err);
-    });
+    }
   }
 
 
