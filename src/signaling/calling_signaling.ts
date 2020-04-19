@@ -88,8 +88,7 @@ export class Calling extends EventEmitter {
 
           var invitation = new CallingInInvitation(this, msg.handle, msg.sender, msg.data);
           var room = new CallingInvitationRoom(invitation, this.room_options, msg.sender, msg.data);
-          // TODO
-          //room.signaling.init(msg);
+          room.signaling.init(msg);
 
           this.emit('invitation', room);
           return;
@@ -1073,8 +1072,7 @@ export class CallingRoom extends Room<CallingSignalingPeer,CallingSignaling> {
   peers!: Record<string,CallingPeer>;
 
   constructor(signaling: CallingSignaling, options: Record<string,any>) {
-    super(signaling, options);
-    options = Object.assign({auto_connect: false}, options);
+    super(signaling, { auto_connect: false, ...options });
   }
 
 
