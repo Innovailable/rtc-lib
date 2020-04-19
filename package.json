@@ -10,7 +10,7 @@
   "scripts": {
     "test": "mocha"
   },
-  "version": "0.4.0",
+  "version": "0.4.1",
   "dependencies": {
     "@types/browserify": "^12.0.36",
     "core-js": "^3.6.4",
