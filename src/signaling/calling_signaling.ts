@@ -31,7 +31,7 @@ export class Calling extends EventEmitter {
   state: CallingState = "idle";
 
   constructor(channel: Channel, room_options: Record<string,any>) {
-      super();
+    super();
 
     this.channel = channel;
     this.room_options = room_options;
@@ -262,7 +262,7 @@ export class CallingNamespace extends EventEmitter {
   rooms: Record<string,CallingNamespaceRoom>
 
   constructor(calling: Calling, id: string) {
-      super();
+    super();
 
     this.calling = calling;
     this.id = id;
@@ -518,7 +518,7 @@ export class CallingNamespaceUser extends EventEmitter {
 
   // TODO probably remove pending
   constructor(id: string, status: Record<string,any>, pending = false) {
-      super();
+    super();
 
     this.id = id;
     this.status = status;
@@ -534,7 +534,7 @@ export class CallingNamespaceRoom extends EventEmitter {
   peers: Record<string,CallingNamespaceRoomPeer>;
 
   constructor(id: string, status: Record<string,any>) {
-      super();
+    super();
 
     this.id = id;
     this.status = status;
@@ -559,7 +559,7 @@ export class CallingNamespaceRoomPeer extends EventEmitter {
   accepted_d: Deferred<void>;
 
   constructor(id: string, status: Record<string,any>, pending: boolean) {
-      super();
+    super();
 
     this.id = id;
     this.status = status;
@@ -594,7 +594,7 @@ export class CallingSignaling extends EventEmitter implements Signaling<CallingS
   connect_p?: Promise<void>;
 
   constructor(calling: Calling, connect_fun: (peer_status: Record<string,any>, cb: DataCb) => void) {
-      super();
+    super();
 
     this.calling = calling;
     this.connect_fun = connect_fun;
@@ -734,7 +734,7 @@ export class CallingSignaling extends EventEmitter implements Signaling<CallingS
   connect(): Promise<void> {
     if ((this.connect_p == null)) {
       this.connect_p = this.calling.connect().then(() => {
-        new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
           this.connect_fun(this.peer_status, (err, res) => {
             if (err != null) {
               reject(err);
@@ -910,7 +910,7 @@ export class CallingSignalingPeer extends EventEmitter implements SignalingPeer 
   accepted_d: Deferred<void>;
 
   constructor(room: CallingSignaling, id: string, status: Record<string,any>, pending: boolean, first: boolean) {
-      super();
+    super();
 
     this.room = room;
     this.id = id;
@@ -954,7 +954,7 @@ export class CallingInInvitation extends EventEmitter {
 
   // TODO probably remove sender and data
   constructor(calling: Calling, handle: string, sender: string, data: any) {
-      super();
+    super();
 
     this.calling = calling;
     this.handle = handle;
@@ -1083,7 +1083,7 @@ export class CallingRoom extends Room<CallingSignalingPeer,CallingSignaling> {
   }
 
 
-  invite(user: CallingNamespaceUser, data: any): Promise<CallingOutInvitation> {
+  invite(user: CallingNamespaceUser | string, data: any): Promise<CallingOutInvitation> {
     return this.signaling.invite(user, data);
   }
 
@@ -1107,12 +1107,11 @@ export class CallingInvitationRoom extends CallingRoom {
   data: any;
 
   constructor(invitation: CallingInInvitation, options: Record<string,any>, sender_id: string, data: any) {
-      super(invitation.signaling(), options);
+    super(invitation.signaling(), options);
 
     this.invitation = invitation;
     this.sender_id = sender_id;
     this.data = data;
-    super(this.invitation.signaling(), options);
 
     this.invitation.on('cancelled', () => {
       this.emit('cancelled');

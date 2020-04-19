@@ -91,21 +91,31 @@ export class LocalPeer extends Peer {
    * @param {Promise -> rtc.Stream | rtc.Stream | Object} stream The stream, a promise to the stream or the configuration to create a stream with `rtc.Stream.createStream()`
    * @return {Promise -> rtc.Stream} Promise of the stream which was added
    */
-  addStream(name: string, obj: Stream | Promise<Stream> | Record<string,any>) {
+  addStream(obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>;
+  addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>
+
+  addStream(a: string | Stream | Promise<Stream> | MediaStreamConstraints, b?: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream> {
+    let name: string;
+    let obj: Stream | Promise<Stream> | MediaStreamConstraints;
+
+    // name can be omitted ... once
+    if (typeof a === 'string') {
+      name = a;
+      obj = b!;
+    } else {
+      name = Peer.DEFAULT_STREAM;
+      obj = a;
+    }
+
     // helper to actually save stream
     const saveStream = (stream_p: Promise<Stream>) => {
       // TODO: collision detection?
       this.streams[name] = stream_p;
       this.emit('configuration_changed');
       this.emit('streams_changed');
+      this.emit('stream_added', stream_p);
       return stream_p;
     };
-
-    // name can be omitted ... once
-    if (typeof name !== 'string') {
-      obj = name;
-      name = Peer.DEFAULT_STREAM;
-    }
 
     if ('then' in obj) {
       // it is a promise

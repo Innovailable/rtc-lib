@@ -274,16 +274,16 @@ export class PeerConnection extends EventEmitter {
    * @param {Object} sdp The local SDP
    * @return {Promise} Promise which will be resolved once the local description was set successfully
    */
-  _processLocalSdp(sdp: RTCSessionDescriptionInit) {
-    return this.pc.setLocalDescription(sdp).then(() => {
-      const data  = {
-        sdp: sdp.sdp,
-        type: sdp.type
-      };
+  async _processLocalSdp(sdp: RTCSessionDescriptionInit) {
+    await this.pc.setLocalDescription(sdp);
 
-      this.emit('signaling', data);
-      return sdp;
-    });
+    const data  = {
+      sdp: sdp.sdp,
+      type: sdp.type
+    };
+
+    this.emit('signaling', data);
+    return sdp;
   }
 
   /**
