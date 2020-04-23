@@ -91,6 +91,10 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
       this.emit('stream_added', name, stream);
     });
 
+    this.stream_collection.on('stream_removed', (name) => {
+      this.emit('stream_removed', name);
+    });
+
     // channels stuff
 
     this.channel_collection = new ChannelCollection();
@@ -162,6 +166,11 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
     if (this.options.auto_connect == null || this.options.auto_connect) {
       this.connect();
     }
+  }
+
+
+  negotiate() {
+    this.peer_connection.negotiate();
   }
 
 
@@ -298,6 +307,11 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
       const stream_p = Stream.createStream(obj);
       return saveStream(stream_p);
     }
+  }
+
+
+  removeStream(name: string = Peer.DEFAULT_STREAM) {
+    delete this.private_streams[name];
   }
 
 

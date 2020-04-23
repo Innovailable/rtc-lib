@@ -178,7 +178,7 @@ export class PeerConnection extends EventEmitter {
    * Add new signaling information received from remote peer
    * @method signaling
    * @param {Object} data The signaling information
-   *///
+   */
   async signaling(data: RTCSessionDescriptionInit) {
     const sdp = new RTCSessionDescription(data);
 
@@ -342,6 +342,15 @@ export class PeerConnection extends EventEmitter {
         this.emit('data_channel_ready', new DataChannel(channel));
       };
     }
+  }
+
+
+  negotiate() {
+    if(!this.connected) {
+      return;
+    }
+
+    this._offer();
   }
 
 

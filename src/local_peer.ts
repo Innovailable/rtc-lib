@@ -131,6 +131,14 @@ export class LocalPeer extends Peer {
   }
 
 
+  removeStream(name: string = Peer.DEFAULT_STREAM) {
+    delete this.streams[name];
+    this.emit('configuration_changed');
+    this.emit('streams_changed');
+    // TODO remove event?
+  }
+
+
   /**
    * Get local stream
    * @method stream

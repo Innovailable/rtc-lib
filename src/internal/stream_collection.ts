@@ -52,8 +52,6 @@ export class StreamCollection extends EventEmitter {
    * @param data {Object} An object mapping the stream ids to stream names
    */
   update(data: Record<string,string>): void {
-    let name;
-    const members = [];
     this._waiting = {};
 
     // remove old streams
@@ -74,7 +72,7 @@ export class StreamCollection extends EventEmitter {
 
     // update mappings
 
-    for (name in data) {
+    for (const name of Object.keys(data)) {
       // does stream exist?
 
       const id = data[name];
