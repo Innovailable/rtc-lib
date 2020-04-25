@@ -13,7 +13,8 @@ export type StreamTrackType = 'audio' | 'video' | 'both';
  * @param {RTCDataStream} stream The native stream
  */
 export class Stream extends EventEmitter {
-  stream: MediaStream;
+  stream!: MediaStream;
+  trackChangeCb: () => void;
 
   /**
    * Emitted when tracks are muted or unmuted. Only triggered when changes are
@@ -24,8 +25,29 @@ export class Stream extends EventEmitter {
    */
 
   constructor(stream: MediaStream) {
-      super();
+    super();
+
+    this.trackChangeCb = () => {
+      this.emit("tracks_changed");
+    };
+
+    this.setStream(stream);
+  }
+
+
+  setStream(stream: MediaStream) {
+    if(this.stream != null) {
+      this.stream.removeEventListener("addtrack", this.trackChangeCb);
+      this.stream.removeEventListener("removetrack", this.trackChangeCb);
+    }
+
     this.stream = stream;
+
+    this.emit("stream_changed", stream);
+    this.emit("tracks_changed");
+
+    this.stream.addEventListener("addtrack", this.trackChangeCb);
+    this.stream.addEventListener("removetrack", this.trackChangeCb);
   }
 
 

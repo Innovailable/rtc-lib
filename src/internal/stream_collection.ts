@@ -17,6 +17,7 @@ export class StreamCollection extends EventEmitter {
   _defers: Record<string,Deferred<Stream>>;
   _waiting: Record<string,string>;
   _pending: Record<string,Stream>;
+  _resolved: Record<string,Stream>;
 
   wait_d: Deferred<void>;
   wait_p: Promise<void>;
@@ -40,6 +41,7 @@ export class StreamCollection extends EventEmitter {
     this._defers = {};
     this._waiting = {};
     this._pending = {};
+    this._resolved = {};
 
     this.wait_d = new Deferred();
     this.wait_p = this.wait_d.promise;
@@ -114,10 +116,10 @@ export class StreamCollection extends EventEmitter {
   /**
    * Add stream to the collection and resolve promises waiting for it
    * @method resolve
-   * @param {rtc.Stream} stream
+   * @param {rtc.Stream} mediaStream
    */
-  resolve(stream: Stream): void {
-    let id = stream.id();
+  resolve(mediaStream: MediaStream): void {
+    let id = mediaStream.id;
 
     // streams from Chrome to Firefox are coming in with id set to 'default' ...
     if (id === 'default') {
@@ -128,6 +130,20 @@ export class StreamCollection extends EventEmitter {
         console.log("Unable to work around incompatibility between Firefox and Chrome concerning stream identification");
       }
     }
+
+    if(id in this._resolved) {
+      const stream = this._resolved[id];
+
+      if(mediaStream === stream.stream) {
+        return;
+      }
+
+      stream.setStream(mediaStream);
+      return;
+    }
+
+    const stream = new Stream(mediaStream);
+    this._resolved[id] = stream;
 
     if (this._waiting[id] != null) {
       // stream is expected

@@ -141,7 +141,7 @@ export class PeerConnection extends EventEmitter {
 
     this.pc.ontrack = event => {
       event.streams.map((stream) =>
-        this.emit('stream_added', new Stream(stream)));
+        this.emit('stream_added', stream));
     };
 
     this.pc.ondatachannel = event => {
