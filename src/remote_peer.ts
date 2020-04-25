@@ -2,11 +2,12 @@ import { Peer } from './peer';
 
 import { StreamCollection } from './internal/stream_collection';
 import { ChannelCollection } from './internal/channel_collection';
-import { SignalingPeer } from './types';
+import { SignalingPeer, StreamTransceiverFactoryArray, StreamInitData, StreamTransceiverFactory } from './types';
 import { PeerConnection, PeerConnectionFingerprints } from './peer_connection'
 import { LocalPeer } from './local_peer'
 import { Stream } from './stream'
 import { DataChannel } from './data_channel'
+import { sanitizeStreamTransceivers } from './helper';
 
 
 /**
@@ -29,7 +30,7 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
   signaling: S;
   local: LocalPeer;
   options: Record<string,any>;
-  private_streams: Record<string,Promise<Stream>>;
+  private_streams: Record<string,StreamInitData>;
   private_channels: Record<string,RTCDataChannelInit>;
   stream_collection: StreamCollection;
   streams: Record<string,Promise<Stream>>;
@@ -169,7 +170,8 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
   }
 
 
-  negotiate() {
+  async negotiate() {
+    this.applyStreams();
     this.peer_connection.negotiate();
   }
 
@@ -198,27 +200,8 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
    */
   connect(): Promise<void> {
     if (this.connect_p == null) {
-      // wait for streams
-
-      const stream_promises = Array<Promise<[string,Stream]>>();
-
-      const object = Object.assign({}, this.local.streams, this.private_streams);
-      for (const [name, stream] of Object.entries(object)) {
-        const promise = stream.then((stream): [string,Stream] => [name, stream]);
-
-        stream_promises.push(promise);
-      }
-
-      // TODO: really fail on failed streams?
-      this.connect_p = Promise.all(stream_promises).then(streams => {
-        // add all streams
-
-        for (const [name, stream] of streams) {
-          this.peer_connection.addStream(stream);
-          this.streams_desc[name] = stream.id();
-        }
-
-        // create data channels
+      const doConnect = async () => {
+        await this.applyStreams();
 
         for (const [name, options] of Object.entries({...this.local.channels, ...this.private_channels})) {
           this.peer_connection.addDataChannel(name, options);
@@ -229,11 +212,45 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
 
         // actually connect
 
-        return this.peer_connection.connect();
-      });
+        await this.peer_connection.connect();
+      };
+
+      // TODO: really fail on failed streams?
+      this.connect_p = doConnect();
     }
 
     return this.connect_p;
+  }
+
+
+  private async applyStreams() {
+    const stream_promises = Array<Promise<[string,Stream]>>();
+
+    const stream_object = Object.assign({}, this.local.streams, this.private_streams);
+
+    const promises = Object.entries(stream_object).map(async ([name, { stream, transceivers }]): Promise<{ name: string, stream: Stream, transceivers: StreamTransceiverFactoryArray }> => {
+      return {
+        name,
+        stream: await stream,
+        transceivers,
+      };
+    });
+
+    // TODO: really fail on failed streams?
+    const streams = await Promise.all(promises);
+
+    // update stream description
+
+    this.streams_desc = {};
+
+    for (const { name, stream } of streams) {
+      this.streams_desc[name] = stream.id();
+    }
+
+    // pass to peerconnection
+
+    const streamMap = new Map(streams.map(({ name, stream, transceivers }) => [stream, transceivers]));
+    this.peer_connection.setStreams(streamMap);
   }
 
 
@@ -268,20 +285,23 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
    * @return {Promise -> rtc.Stream} Promise of the stream which was added
    */
 
-  addStream(obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>;
-  addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>
+  addStream(obj: Stream | Promise<Stream> | MediaStreamConstraints, transceivers?: StreamTransceiverFactory | StreamTransceiverFactoryArray): Promise<Stream>;
+  addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints, transceivers?: StreamTransceiverFactory | StreamTransceiverFactoryArray): Promise<Stream>
 
-  addStream(a: string | Stream | Promise<Stream> | MediaStreamConstraints, b?: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream> {
+  addStream(a: any, b?: any, c?: any): Promise<Stream> {
     let name: string;
     let obj: Stream | Promise<Stream> | MediaStreamConstraints;
+    let transceivers: StreamTransceiverFactoryArray;
 
     // name can be omitted ... once
     if (typeof a === 'string') {
       name = a;
-      obj = b!;
+      obj = b;
+      transceivers = sanitizeStreamTransceivers(c);
     } else {
       name = Peer.DEFAULT_STREAM;
       obj = a;
+      transceivers = sanitizeStreamTransceivers(b);
     }
 
 
@@ -292,7 +312,11 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
     // helper to actually save stream
     const saveStream = (stream_p: Promise<Stream>) => {
       // TODO: collision detection?
-      this.private_streams[name] = stream_p;
+      this.private_streams[name] = {
+        stream: stream_p,
+        transceivers,
+      };
+
       return stream_p;
     };
 

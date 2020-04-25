@@ -5,13 +5,18 @@
  */
 import { EventEmitter } from 'events';
 import StrictEventEmitter from 'strict-event-emitter-types';
+import { Stream } from './stream';
 
 export type TypedEventEmitter<T> = StrictEventEmitter<EventEmitter,T>;
 
-export type InferSignalingPeerCb<cb> = cb extends (peer: infer SP) => void ? SP : never;
-export type InferSignalingPeer<signaling extends Signaling> = signaling["on"] extends (type: "peer_joined", peer: infer SP) => void ? InferSignalingPeerCb<SP> : never;
-type S = Signaling<SignalingPeer>
-type SP = InferSignalingPeer<S>;
+export type StreamTransceiverFactoryCb = RTCPeerConnection["addTransceiver"];
+export type StreamTransceiverFactory = (create: StreamTransceiverFactoryCb) => void;
+export type StreamTransceiverFactoryArray = StreamTransceiverFactory[];
+
+export interface StreamInitData {
+  stream: Promise<Stream>;
+  transceivers: StreamTransceiverFactoryArray;
+}
 
 /**
  * @module rtc.signaling

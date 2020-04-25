@@ -1,5 +1,7 @@
 import { Peer } from './peer';
 import { Stream } from './stream';
+import { StreamInitData, StreamTransceiverFactoryArray } from './types';
+import { sanitizeStreamTransceivers } from './helper';
 
 /**
  * @module rtc
@@ -12,7 +14,7 @@ import { Stream } from './stream';
  * @constructor
  */
 export class LocalPeer extends Peer {
-  streams: Record<string,Promise<Stream>>;
+  streams: Record<string,StreamInitData>;
   // TODO
   channels: Record<string,RTCDataChannelInit>;
   _status: Record<string,string>;
@@ -94,23 +96,29 @@ export class LocalPeer extends Peer {
   addStream(obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>;
   addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>
 
-  addStream(a: string | Stream | Promise<Stream> | MediaStreamConstraints, b?: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream> {
+  addStream(a: any, b?: any, c?: any): Promise<Stream> {
     let name: string;
     let obj: Stream | Promise<Stream> | MediaStreamConstraints;
+    let transceivers: StreamTransceiverFactoryArray;
 
     // name can be omitted ... once
     if (typeof a === 'string') {
       name = a;
-      obj = b!;
+      obj = b;
+      transceivers = sanitizeStreamTransceivers(c);
     } else {
       name = Peer.DEFAULT_STREAM;
       obj = a;
+      transceivers = sanitizeStreamTransceivers(b);
     }
 
     // helper to actually save stream
     const saveStream = (stream_p: Promise<Stream>) => {
       // TODO: collision detection?
-      this.streams[name] = stream_p;
+      this.streams[name] = {
+        stream: stream_p,
+        transceivers,
+      };
       this.emit('configuration_changed');
       this.emit('streams_changed');
       this.emit('stream_added', stream_p);
@@ -147,7 +155,7 @@ export class LocalPeer extends Peer {
    */
   stream(name: string = Peer.DEFAULT_STREAM) {
     if (name == null) { name = Peer.DEFAULT_STREAM; }
-    return this.streams[name];
+    return this.streams[name].stream;
   }
 
 

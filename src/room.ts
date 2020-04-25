@@ -7,12 +7,10 @@ import { RemotePeer } from './remote_peer';
 import { LocalPeer } from './local_peer';
 import { PeerConnection } from './peer_connection';
 
-import { Signaling, SignalingPeer, InferSignalingPeer } from './types';
+import { Signaling, SignalingPeer } from './types';
 import { Peer } from './peer';
 
 export type RoomState = "idle" | "connecting" | "connected" | "closed" | "failed";
-
-type Test = InferSignalingPeer<Signaling>;
 
 /**
  * @module rtc

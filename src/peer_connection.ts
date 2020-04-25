@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 
 import { Stream } from './stream';
 import { DataChannel } from './data_channel';
+import { StreamTransceiverFactory } from './types';
 
 export interface FingerprintInfo {
   type: string;
@@ -12,6 +13,11 @@ export interface FingerprintInfo {
 export interface PeerConnectionFingerprints {
   local?: FingerprintInfo;
   remote?: FingerprintInfo;
+}
+
+interface StreamData {
+  senders: ReadonlyArray<RTCRtpSender>;
+  transceivers: ReadonlyArray<RTCRtpTransceiver>;
 }
 
 function parseSdpFingerprint(sdp: RTCSessionDescription | null): FingerprintInfo | undefined {
@@ -68,6 +74,7 @@ export class PeerConnection extends EventEmitter {
   connected: boolean;
   // TODO
   signaling_pending: Array<any>;
+  current_streams = new Map<Stream,StreamData>();
 
   /**
    * New local ICE candidate which should be signaled to remote peer
@@ -299,15 +306,52 @@ export class PeerConnection extends EventEmitter {
   }
 
 
-  /**
-   * Add local stream
-   * @method addStream
-   * @param {rtc.Stream} stream The local stream
-   */
-  addStream(stream: Stream) {
-    for(const track of stream.stream.getTracks()) {
-      this.pc.addTrack(track, stream.stream);
-    }
+  setStreams(new_streams: Map<Stream,ReadonlyArray<StreamTransceiverFactory>>) {
+    // remove old streams
+
+    this.current_streams.forEach(({ senders, transceivers }, stream) => {
+      if(new_streams.has(stream)) {
+        return;
+      }
+
+      for(const sender of senders) {
+        this.pc.removeTrack(sender);
+      }
+
+      for(const transceiver of transceivers) {
+        transceiver.stop();
+      }
+
+      this.current_streams.delete(stream);
+    });
+
+    // add new streams
+
+    new_streams.forEach((factories, stream) => {
+      if(this.current_streams.has(stream)) {
+        return;
+      }
+
+      const tracks = stream.stream.getTracks();
+
+      const senders = tracks.map((track): RTCRtpSender => {
+        return this.pc.addTrack(track, stream.stream);
+      });
+
+      const transceivers = Array<RTCRtpTransceiver>();
+
+      const streams = [ stream.stream ];
+
+      factories.forEach((factory) => {
+        factory((track, options = {}) => {
+          const transceiver = this.pc.addTransceiver(track, { ...options, streams });
+          transceivers.push(transceiver);
+          return transceiver;
+        });
+      });
+
+      this.current_streams.set(stream, { senders, transceivers });
+    });
   }
 
 
