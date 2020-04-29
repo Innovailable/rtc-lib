@@ -155,7 +155,7 @@ export class LocalPeer extends Peer {
    */
   stream(name: string = Peer.DEFAULT_STREAM) {
     if (name == null) { name = Peer.DEFAULT_STREAM; }
-    return this.streams[name].stream;
+    return this.streams[name]?.stream;
   }
 
 
