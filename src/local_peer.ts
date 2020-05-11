@@ -57,7 +57,7 @@ export class LocalPeer extends Peer {
       this._status[key] = value;
       this.emit('status_changed', this._status);
     } else {
-      this._status[key];
+      return this._status[key];
     }
   }
 
