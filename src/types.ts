@@ -9,8 +9,9 @@ import { Stream } from './stream';
 
 export type TypedEventEmitter<T> = StrictEventEmitter<EventEmitter,T>;
 
+export type StreamTransceiverCleanup = () => void;
 export type StreamTransceiverFactoryCb = RTCPeerConnection["addTransceiver"];
-export type StreamTransceiverFactory = (create: StreamTransceiverFactoryCb) => void;
+export type StreamTransceiverFactory = (create: StreamTransceiverFactoryCb) => (void | StreamTransceiverCleanup);
 export type StreamTransceiverFactoryArray = StreamTransceiverFactory[];
 
 export interface StreamInitData {

@@ -1,6 +1,7 @@
 import {EventEmitter} from 'events';
 
-export type StreamTrackType = 'audio' | 'video' | 'both';
+export type StreamTrackType = 'audio' | 'video';
+export type StreamTrackSelection = StreamTrackType | 'both';
 
 /**
  * @module rtc
@@ -67,7 +68,7 @@ export class Stream extends EventEmitter {
    * @param {'audio' | 'video' | 'both'} [type='both'] The type of track to check for
    * @return {Number} The amount of tracks of the given type
    */
-  hasTracks(type: StreamTrackType) {
+  hasTracks(type: StreamTrackSelection) {
     return this.getTracks(type).length;
   }
 
@@ -78,7 +79,7 @@ export class Stream extends EventEmitter {
    * @param {'audio' | 'video' | 'both'} [type='both'] The type of tracks to get
    * @return {Array} An Array of the tracks
    */
-  getTracks(type: StreamTrackType) {
+  getTracks(type: StreamTrackSelection) {
     if (type === 'audio') {
       return this.stream.getAudioTracks();
     } else if (type === 'video') {
@@ -99,7 +100,7 @@ export class Stream extends EventEmitter {
    * @param {'audio' | 'video' | 'both'} [type='audio'] The type of tracks
    * @return {Boolean} Whether the tracks are muted
    */
-  muted(type: StreamTrackType = 'audio'): boolean {
+  muted(type: StreamTrackSelection = 'audio'): boolean {
     const tracks = this.getTracks(type);
 
     if (tracks.length < 1) {
@@ -118,7 +119,7 @@ export class Stream extends EventEmitter {
    * @param {'audio' | 'video' | 'both'} [type='audio'] The type of tracks to mute or unmute
    * @return {Boolean} Whether the tracks were muted or unmuted
    */
-  mute(muted: boolean = true, type: StreamTrackType = 'audio') {
+  mute(muted: boolean = true, type: StreamTrackSelection = 'audio') {
     for (let track of this.getTracks(type)) {
       track.enabled = !muted;
     }
@@ -135,7 +136,7 @@ export class Stream extends EventEmitter {
    * @param {'audio' | 'video' | 'both'} [type='audio'] The type of tracks to mute or unmute
    * @return {Boolean} Whether the tracks were muted or unmuted
    */
-  toggleMute(type: StreamTrackType = 'audio') {
+  toggleMute(type: StreamTrackSelection = 'audio') {
     const tracks = this.getTracks(type);
 
     if (tracks.length < 1) {

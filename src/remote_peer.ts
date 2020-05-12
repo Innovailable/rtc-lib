@@ -2,7 +2,7 @@ import { Peer } from './peer';
 
 import { StreamCollection } from './internal/stream_collection';
 import { ChannelCollection } from './internal/channel_collection';
-import { SignalingPeer, StreamTransceiverFactoryArray, StreamInitData, StreamTransceiverFactory } from './types';
+import { SignalingPeer, StreamTransceiverFactoryArray, StreamInitData, StreamTransceiverFactory, StreamTransceiverFactoryCb } from './types';
 import { PeerConnection, PeerConnectionFingerprints } from './peer_connection'
 import { LocalPeer } from './local_peer'
 import { Stream } from './stream'
@@ -35,7 +35,6 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
   stream_collection: StreamCollection;
   streams: Record<string,Promise<Stream>>;
   // TODO
-  streams_desc: Record<string,any>;
   channel_collection: ChannelCollection;
   channels: Record<string,Promise<DataChannel>>
   channels_desc: Record<string,any>;
@@ -86,7 +85,6 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
 
     this.stream_collection = new StreamCollection();
     this.streams = this.stream_collection.streams;
-    this.streams_desc = {};
 
     this.stream_collection.on('stream_added', (name, stream) => {
       this.emit('stream_added', name, stream);
@@ -108,8 +106,8 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
 
     // resolve streams and data channels
 
-    this.peer_connection.on('stream_added', stream => {
-      this.stream_collection.resolve(stream);
+    this.peer_connection.on('stream_added', (stream, name) => {
+      this.stream_collection.resolve(name, stream);
     });
 
     this.peer_connection.on('data_channel_ready', channel => {
@@ -119,13 +117,12 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
     // wire up peer connection signaling
 
     this.peer_connection.on('signaling', data => {
-      data.streams = this.streams_desc;
       data.channels = this.channels_desc;
       this.signaling.send('signaling', data);
     });
 
     this.signaling.on('signaling', data => {
-      this.stream_collection.update(data.streams);
+      this.stream_collection.setRemote(data.streams);
       this.channel_collection.setRemote(data.channels);
       this.peer_connection.signaling(data);
     });
@@ -170,7 +167,7 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
   }
 
 
-  async negotiate() {
+  negotiate() {
     this.applyStreams();
     this.peer_connection.negotiate();
   }
@@ -228,28 +225,27 @@ export class RemotePeer<S extends SignalingPeer = SignalingPeer> extends Peer {
 
     const stream_object = Object.assign({}, this.local.streams, this.private_streams);
 
-    const promises = Object.entries(stream_object).map(async ([name, { stream, transceivers }]): Promise<{ name: string, stream: Stream, transceivers: StreamTransceiverFactoryArray }> => {
+    const promises = Object.entries(stream_object).map(async ([name, { stream, transceivers }]): Promise<{ name: string, transceivers: StreamTransceiverFactoryArray }> => {
+      const resolvedStream = await stream;
+
+      const streamTransceivers = resolvedStream.getTracks('both').map((track) => {
+        return (create: StreamTransceiverFactoryCb) => {
+          create(track);
+        };
+      });
+
       return {
         name,
-        stream: await stream,
-        transceivers,
+        transceivers: [...transceivers, ...streamTransceivers],
       };
     });
 
     // TODO: really fail on failed streams?
     const streams = await Promise.all(promises);
 
-    // update stream description
-
-    this.streams_desc = {};
-
-    for (const { name, stream } of streams) {
-      this.streams_desc[name] = stream.id();
-    }
-
     // pass to peerconnection
 
-    const streamMap = new Map(streams.map(({ name, stream, transceivers }) => [stream, transceivers]));
+    const streamMap = new Map(streams.map(({ name, transceivers }) => [name, transceivers]));
     this.peer_connection.setStreams(streamMap);
   }
 

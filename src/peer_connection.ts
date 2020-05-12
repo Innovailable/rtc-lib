@@ -1,7 +1,7 @@
 import { Deferred } from './internal/promise';
 import { EventEmitter } from 'events';
 
-import { Stream } from './stream';
+import { Stream, StreamTrackType } from './stream';
 import { DataChannel } from './data_channel';
 import { StreamTransceiverFactory } from './types';
 
@@ -15,9 +15,22 @@ export interface PeerConnectionFingerprints {
   remote?: FingerprintInfo;
 }
 
+export type RemoteStreamDescription = Record<string,[string,'audio'|'video']>;
+
+export interface AnnotateSessionDescription extends RTCSessionDescriptionInit {
+  streams: RemoteStreamDescription;
+}
+
+export interface TransceiverData {
+  kind: StreamTrackType;
+  transceiver: RTCRtpTransceiver;
+}
+
+export type TransceiverCleanup = () => void;
+
 interface StreamData {
-  senders: ReadonlyArray<RTCRtpSender>;
-  transceivers: ReadonlyArray<RTCRtpTransceiver>;
+  transceivers: ReadonlyArray<TransceiverData>;
+  cleanups: ReadonlyArray<TransceiverCleanup>;
 }
 
 function parseSdpFingerprint(sdp: RTCSessionDescription | null): FingerprintInfo | undefined {
@@ -74,7 +87,10 @@ export class PeerConnection extends EventEmitter {
   connected: boolean;
   // TODO
   signaling_pending: Array<any>;
-  current_streams = new Map<Stream,StreamData>();
+  current_streams = new Map<string,StreamData>();
+  pending_streams = new Map<string,ReadonlyArray<StreamTransceiverFactory>>();
+  remote_streams?: RemoteStreamDescription;
+  renegotiate = false;
 
   /**
    * New local ICE candidate which should be signaled to remote peer
@@ -140,21 +156,62 @@ export class PeerConnection extends EventEmitter {
     };
 
     this.pc.ontrack = event => {
-      event.streams.map((stream) =>
-        this.emit('stream_added', stream));
+      let stream = event.streams[0];
+
+      if(this.remote_streams == null) {
+        console.log('Got track without remote streams');
+        return;
+      }
+
+      const mid = event.transceiver.mid!;
+      const streamName = this.remote_streams[mid][0];
+
+      // build a stream if it is not build for us
+      // workaround for firefox missing `transceiver.sender.setStreams()`
+      // TODO remove when firefox is fixed
+
+      if(stream == null) {
+        // create a stream to fire
+
+        stream = new MediaStream([event.track]);
+
+        // add other tracks we know
+
+        for(const transceiver of this.pc.getTransceivers()) {
+          const track = transceiver.receiver.track;
+
+          if(track == null) {
+            continue;
+          }
+
+          const trackStreamName = this.remote_streams[transceiver.mid!][0];
+
+          if(streamName === trackStreamName) {
+            stream.addTrack(track);
+          }
+        }
+      }
+
+      this.emit('stream_added', stream, streamName);
     };
 
     this.pc.ondatachannel = event => {
       this.emit('data_channel_ready', new DataChannel(event.channel));
     };
 
-    //this.pc.onremovestream = function(event) {};
-      // TODO
+    this.pc.onnegotiationneeded = event => {
+      if(this.pc.signalingState === 'stable') {
+        this.negotiate();
+      } else {
+        this.renegotiate = true;
+      }
+    };
 
-    //this.pc.onnegotiationneeded = event => {
-      //// TODO
-      //console.log('onnegotiationneeded called ...');
-    //};
+    this.pc.onsignalingstatechange = event => {
+      if(this.pc.signalingState === 'stable' && this.renegotiate) {
+        this._offer();
+      }
+    }
 
     // PeerConnection states
 
@@ -170,7 +227,6 @@ export class PeerConnection extends EventEmitter {
 
     this.pc.onsignalingstatechange = function(event) {};
   }
-      //console.log(event)
 
 
   fingerprints(): PeerConnectionFingerprints {
@@ -186,7 +242,7 @@ export class PeerConnection extends EventEmitter {
    * @method signaling
    * @param {Object} data The signaling information
    */
-  async signaling(data: RTCSessionDescriptionInit) {
+  async signaling(data: AnnotateSessionDescription) {
     const sdp = new RTCSessionDescription(data);
 
     try {
@@ -195,16 +251,19 @@ export class PeerConnection extends EventEmitter {
           return;
         }
 
+        this.remote_streams = data.streams;
+
         await Promise.all([
           this.pc.setLocalDescription({ type: 'rollback' }),
           this.pc.setRemoteDescription(sdp),
         ]);
       } else {
+        this.remote_streams = data.streams;
         await this.pc.setRemoteDescription(sdp);
       }
 
       if ((data.type === 'offer') && this.connected) {
-        return this._answer();
+        this._answer();
       }
     } catch(err) {
       this._connectError(err);
@@ -251,8 +310,10 @@ export class PeerConnection extends EventEmitter {
    */
   async _offer() {
     try {
+      this._createTransceivers();
+      this.renegotiate = false;
       const sdp = await this.pc.createOffer(this._oaOptions());
-      return this._processLocalSdp(sdp);
+      await this._processLocalSdp(sdp);
     } catch(err) {
       this._connectError(err);
     }
@@ -266,8 +327,10 @@ export class PeerConnection extends EventEmitter {
    */
   async _answer() {
     try {
+      this._mapTransceivers();
+      this.renegotiate = false;
       const sdp = await this.pc.createAnswer(this._oaOptions());
-      return this._processLocalSdp(sdp);
+      await this._processLocalSdp(sdp);
     } catch(err) {
       this._connectError(err);
     }
@@ -284,13 +347,26 @@ export class PeerConnection extends EventEmitter {
   async _processLocalSdp(sdp: RTCSessionDescriptionInit) {
     await this.pc.setLocalDescription(sdp);
 
-    const data  = {
+    const streams: Record<string,[string,'audio'|'video']>  = {};
+
+    for(const [name, { transceivers }] of this.current_streams.entries()) {
+      for(const { kind, transceiver } of transceivers) {
+        if(transceiver.mid == null) {
+          console.log('Transceiver without mid encountered');
+          continue;
+        }
+
+        streams[transceiver.mid] = [name, kind];
+      }
+    }
+
+    const data: AnnotateSessionDescription = {
       sdp: sdp.sdp,
-      type: sdp.type
+      type: sdp.type,
+      streams,
     };
 
     this.emit('signaling', data);
-    return sdp;
   }
 
   /**
@@ -306,20 +382,20 @@ export class PeerConnection extends EventEmitter {
   }
 
 
-  setStreams(new_streams: Map<Stream,ReadonlyArray<StreamTransceiverFactory>>) {
+  setStreams(new_streams: Map<string,ReadonlyArray<StreamTransceiverFactory>>) {
     // remove old streams
 
-    this.current_streams.forEach(({ senders, transceivers }, stream) => {
+    this.current_streams.forEach(({ transceivers, cleanups }, stream) => {
       if(new_streams.has(stream)) {
         return;
       }
 
-      for(const sender of senders) {
-        this.pc.removeTrack(sender);
+      for(const { transceiver } of transceivers) {
+        transceiver.stop();
       }
 
-      for(const transceiver of transceivers) {
-        transceiver.stop();
+      for(const cleanup of cleanups) {
+        cleanup();
       }
 
       this.current_streams.delete(stream);
@@ -332,26 +408,113 @@ export class PeerConnection extends EventEmitter {
         return;
       }
 
-      const tracks = stream.stream.getTracks();
+      this.pending_streams.set(stream, factories);
+    });
+  }
 
-      const senders = tracks.map((track): RTCRtpSender => {
-        return this.pc.addTrack(track, stream.stream);
+
+  _mapTransceivers() {
+    const usedMids = new Set<string>();
+    const transceivers = this.pc.getTransceivers();
+
+    const claimTransceiver = (searchName: string, searchKind: StreamTrackType) => {
+      if(this.remote_streams == null) {
+        return;
+      }
+
+      const match = Object.entries(this.remote_streams).find(([mid, [curName, curKind]]) => {
+        return searchName === curName && searchKind === curKind && !usedMids.has(mid);
       });
 
-      const transceivers = Array<RTCRtpTransceiver>();
+      if(match == null) {
+        return;
+      }
 
-      const streams = [ stream.stream ];
+      const mid = match[0];
 
-      factories.forEach((factory) => {
-        factory((track, options = {}) => {
-          const transceiver = this.pc.addTransceiver(track, { ...options, streams });
-          transceivers.push(transceiver);
+      usedMids.add(mid);
+
+      return this.pc.getTransceivers().find((transceiver) => transceiver.mid === mid);
+    };
+
+    for(const [name, factories] of this.pending_streams.entries()) {
+      const transceivers = Array<TransceiverData>();
+      const cleanups = Array<TransceiverCleanup>();
+
+      for(const factory of factories) {
+        const cleanup = factory((track, init) => {
+          const kind = (typeof track === 'string' ? track : track.kind) as StreamTrackType;
+
+          let transceiver = claimTransceiver(name, kind);
+
+          if(transceiver) { 
+            if(typeof track !== 'string') {
+              transceiver.sender.replaceTrack(track);
+            }
+
+            if(init?.streams != null) {
+              transceiver.sender.setStreams?.apply(transceiver.sender, init.streams);
+            }
+
+            if(init?.direction) {
+              transceiver.direction = init.direction;
+            }
+
+            if(init?.sendEncodings) {
+              const parameters = transceiver.sender.getParameters();
+              transceiver.sender.setParameters({
+                ...parameters,
+                encodings: init.sendEncodings,
+              });
+            }
+          } else {
+            // TODO find a way to let devs handle this kind of error
+            // will it ever trigger outside of application error?
+            console.log('Unable to match transceiver. The setup of tracks/transceivers has to be symetrical between peers.');
+            transceiver = this.pc.addTransceiver(track, init);
+          }
+
+          transceivers.push({ kind, transceiver });
+
           return transceiver;
         });
-      });
 
-      this.current_streams.set(stream, { senders, transceivers });
-    });
+        if(cleanup != null) {
+          cleanups.push(cleanup);
+        }
+      }
+
+      this.current_streams.set(name, { transceivers, cleanups });
+    }
+
+    this.pending_streams = new Map();
+  }
+
+
+  _createTransceivers() {
+    for(const [name, factories] of this.pending_streams.entries()) {
+      const transceivers = Array<TransceiverData>();
+      const cleanups = Array<TransceiverCleanup>();
+
+      for(const factory of factories) {
+        const cleanup = factory((track, init) => {
+          const kind = (typeof track === 'string' ? track : track.kind) as StreamTrackType;
+          const transceiver = this.pc.addTransceiver(track, init);
+
+          transceivers.push({ kind, transceiver });
+
+          return transceiver;
+        });
+
+        if(cleanup != null) {
+          cleanups.push(cleanup);
+        }
+      }
+
+      this.current_streams.set(name, { transceivers, cleanups });
+    }
+
+    this.pending_streams = new Map();
   }
 
 
@@ -390,10 +553,6 @@ export class PeerConnection extends EventEmitter {
 
 
   negotiate() {
-    if(!this.connected) {
-      return;
-    }
-
     this._offer();
   }
 
@@ -407,7 +566,7 @@ export class PeerConnection extends EventEmitter {
     if (!this.connected) {
       if (this.offering) {
         // we are starting the process
-        this._offer();
+        this._createTransceivers();
       } else if (this.pc.signalingState === 'have-remote-offer') {
         // the other party is already waiting
         this._answer();

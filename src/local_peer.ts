@@ -1,6 +1,6 @@
 import { Peer } from './peer';
 import { Stream } from './stream';
-import { StreamInitData, StreamTransceiverFactoryArray } from './types';
+import { StreamInitData, StreamTransceiverFactoryArray, StreamTransceiverFactory } from './types';
 import { sanitizeStreamTransceivers } from './helper';
 
 /**
@@ -93,8 +93,8 @@ export class LocalPeer extends Peer {
    * @param {Promise -> rtc.Stream | rtc.Stream | Object} stream The stream, a promise to the stream or the configuration to create a stream with `rtc.Stream.createStream()`
    * @return {Promise -> rtc.Stream} Promise of the stream which was added
    */
-  addStream(obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>;
-  addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints): Promise<Stream>
+  addStream(obj: Stream | Promise<Stream> | MediaStreamConstraints, transceivers?: StreamTransceiverFactory | StreamTransceiverFactoryArray): Promise<Stream>;
+  addStream(name: string, obj: Stream | Promise<Stream> | MediaStreamConstraints, transceivers?: StreamTransceiverFactory | StreamTransceiverFactoryArray): Promise<Stream>
 
   addStream(a: any, b?: any, c?: any): Promise<Stream> {
     let name: string;
