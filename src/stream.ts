@@ -30,6 +30,9 @@ export class Stream extends EventEmitter {
 
     this.trackChangeCb = () => {
       this.emit("tracks_changed");
+
+      this.emit('mute_changed', 'video', this.muted('video'));
+      this.emit('mute_changed', 'audio', this.muted('audio'));
     };
 
     this.setStream(stream);
@@ -45,7 +48,8 @@ export class Stream extends EventEmitter {
     this.stream = stream;
 
     this.emit("stream_changed", stream);
-    this.emit("tracks_changed");
+
+    this.trackChangeCb();
 
     this.stream.addEventListener("addtrack", this.trackChangeCb);
     this.stream.addEventListener("removetrack", this.trackChangeCb);
@@ -120,7 +124,13 @@ export class Stream extends EventEmitter {
    * @return {Boolean} Whether the tracks were muted or unmuted
    */
   mute(muted: boolean = true, type: StreamTrackSelection = 'audio') {
-    for (let track of this.getTracks(type)) {
+    const tracks = this.getTracks(type);
+
+    if(tracks.length < 1) {
+      return true;
+    }
+
+    for (let track of tracks) {
       track.enabled = !muted;
     }
 
