@@ -586,6 +586,14 @@ export class PeerConnection extends EventEmitter {
   close() {
     this.pc.close();
     this.emit('closed');
+
+    for(const { cleanups } of this.current_streams.values()) {
+      for(const cleanup of cleanups) {
+        cleanup();
+      }
+    }
+
+    this.current_streams = new Map();
   }
 };
 
