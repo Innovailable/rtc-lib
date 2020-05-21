@@ -131,11 +131,33 @@ export class PeerConnection extends EventEmitter {
     const ice_servers = [];
 
     if (this.options.stun != null) {
-      ice_servers.push({urls: this.options.stun});
+      if(Array.isArray(this.options.stun)) {
+        for(const url of this.options.stun) {
+          ice_servers.push({urls: url});
+        }
+      } else {
+        ice_servers.push({urls: this.options.stun});
+      }
     }
 
     if (this.options.turn != null) {
-      ice_servers.push(this.options.turn);
+      if(Array.isArray(this.options.turn)) {
+        for(const entry of this.options.turn) {
+          ice_servers.push(entry);
+        }
+      } else {
+        ice_servers.push(this.options.turn);
+      }
+    }
+
+    if (this.options.ice != null) {
+      if(Array.isArray(this.options.ice)) {
+        for(const entry of this.options.ice) {
+          ice_servers.push(entry);
+        }
+      } else {
+        ice_servers.push(this.options.ice);
+      }
     }
 
     // TODO: STUN
