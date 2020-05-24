@@ -72,10 +72,12 @@ HTML page from it using `make doc` or view it online
 ## What else do I need?
 
 You will need a signaling server to enable the peers to find each other and
-establish the peer to peer connections. The code is tested with
-[easy-signaling](https://github.com/Innovailable/easy-signaling) which can be
-run standalone or integrated as a node module. You could also write your own
-signaling server or implement another signaling protocol.
+establish the peer to peer connections. rtc-lib supports multiple different
+signaling protocols including
+[calling-signaling](https://github.com/Innovailable/calling-signaling) and the
+palava protocol (implemented by [signaling
+tower](https://github.com/palavatv/signaltower) and others). You could also
+write your own signaling server or implement another signaling protocol.
 
 It is also recommended to use a [STUN](https://en.wikipedia.org/wiki/STUN)
 server which will allow peers to connect through routers and firewalls. If you
@@ -83,6 +85,6 @@ do not use one only clients on the same network would be able to connect to each
 other. There are several STUN servers open for public use or you can set up your
 own STUN server using one of multiple open source projects.
 
-[TURN](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT) servers
-are currently not supported by this library.
+A [TURN](https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT)
+server can be added to allow connections in nearly all scenarios.
 
