@@ -14,9 +14,6 @@ The design goals and principles are
 * support for multiple Streams and DataChannels
 * consistent handling of errors and success notifications
 
-The library is still under development but should provide basic functionality.
-If something does not work as expected please file a bug report.
-
 ## How to use this?
 
 The central element of the library is a `Room`. Multiple users, which are called
