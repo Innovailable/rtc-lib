@@ -72,7 +72,7 @@ You will need a signaling server to enable the peers to find each other and
 establish the peer to peer connections. rtc-lib supports multiple different
 signaling protocols including
 [calling-signaling](https://github.com/Innovailable/calling-signaling) and the
-palava protocol (implemented by [signaling
+palava protocol (implemented by [signal
 tower](https://github.com/palavatv/signaltower) and others). You could also
 write your own signaling server or implement another signaling protocol.
 
