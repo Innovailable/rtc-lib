@@ -7,11 +7,10 @@ MAIN_SRC=src/index.ts
 OUT_DIR=out
 OUT_NAME=rtc
 
-BUNDLE=$(OUT_DIR)/$(OUT_NAME).js
-MIN_BUNDLE=$(OUT_DIR)/$(OUT_NAME).min.js
-DEP_BUNDLE=$(OUT_DIR)/$(OUT_NAME).dep.js
-MIN_DEP_BUNDLE=$(OUT_DIR)/$(OUT_NAME).dep.min.js
-TEST_BUNDLE=$(OUT_DIR)/$(OUT_NAME).test.js
+BUNDLE=dist/bundle/$(OUT_NAME).js
+MIN_BUNDLE=dist/bundle/$(OUT_NAME).min.js
+DEP_BUNDLE=dist/bundle/$(OUT_NAME).dep.js
+MIN_DEP_BUNDLE=dist/bundle/$(OUT_NAME).dep.min.js
 
 # phony stuff
 
@@ -20,8 +19,6 @@ all: bundle min
 bundle: $(BUNDLE) $(DEP_BUNDLE)
 
 min: $(MIN_BUNDLE) $(MIN_DEP_BUNDLE)
-
-init: node_modules
 
 watch:
 	while inotifywait -e close_write -r src ; do sleep 1; make; echo ; done
@@ -35,34 +32,31 @@ node_modules: package.json
 clean:
 	rm -r out doc
 
-doc: init
+doc: node_modules
 	./node_modules/.bin/yuidoc --syntaxtype coffee -e .coffee -o doc src --themedir yuidoc-theme
 
-test: init
+test: node_modules
 	npm test
 
 example: compile
 	node example/serve.js
 
-karma: init $(TEST_BUNDLE)
+karma: node_modules
 	node_modules/.bin/karma start karma.conf.js
 
-$(BUNDLE): $(SOURCES) init Makefile
-	@mkdir -p $(OUT_DIR)
+$(BUNDLE): $(SOURCES) node_modules Makefile
+	@mkdir -p `dirname $@`
 	node_modules/.bin/browserify --extension .ts -p tsify -t [ babelify --extensions .ts ] -s $(OUT_NAME) -d --no-bundle-external $(MAIN_SRC) -o $@
 
-$(DEP_BUNDLE): $(SOURCES) init Makefile
-	@mkdir -p $(OUT_DIR)
+$(DEP_BUNDLE): $(SOURCES) node_modules Makefile
+	@mkdir -p `dirname $@`
 	node_modules/.bin/browserify --extension .ts -p tsify -t [ babelify --extensions .ts ] -s $(OUT_NAME) -d $(MAIN_SRC) -o $@
 
-$(TEST_BUNDLE): $(SOURCES) $(TEST_SOURCES) init Makefile
-	node_modules/.bin/browserify --extension .ts -p tsify -t [ babelify --extensions .ts ] -s $(OUT_NAME) -d $(MAIN_SRC) $(TEST_SOURCES) -o $@
-
-%.min.js: %.js init Makefile
-	node_modules/.bin/uglifyjs --compress --mangle -o $@ -- $<
+%.min.js: %.js node_modules Makefile
+	node_modules/.bin/terser --compress --mangle -o $@ -- $<
 
 
-compile: $(SOURCES) node_modules Makefile
+compile: $(SOURCES) node_modules Makefile min
 	@mkdir -p dist
 	node_modules/.bin/tsc --declaration --outDir dist/js/
 	node_modules/.bin/babel --out-dir dist/ejs/ dist/js
