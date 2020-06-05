@@ -1,42 +1,42 @@
-$(function() {
+$(document).ready(async function() {
     // construct websocket url from current location
     var loc = window.location;
     var signaling_url = 'ws://' + loc.hostname + ':' + loc.port + '/signaling';
 
+    const channel = new rtc.WebSocketChannel(signaling_url);
+    const signaling = new rtc.MucSignaling(channel);
+
+    // use a poublic stun server
+    const options = {
+        stun: "stun:stun.innovailable.eu",
+    }
+
     // create a room
-    var room = new rtc.Room(signaling_url);
+    const room = new rtc.Room(signaling, options);
 
-    // create and display local video/audio
-    var stream = room.local.addStream();
-    var ve = new rtc.MediaDomElement($('#self'), room.local);
-    ve.mute();
+    // create a local stream from the users camera
+    const stream = await room.local.addStream({ video: true, audio: true });
 
-    // create video for peers
+    // display that stream
+    const ve = new rtc.MediaDomElement($('#self')[0], stream);
+
+    // get notified whenever we meet a new peer
     room.on('peer_joined', function(peer) {
-        var view = $('<video>');
+        // create a video tag for the peer
+        const view = $('<video autoplay>');
         $('body').append(view);
-        var ve = new rtc.MediaDomElement(view, peer);
-        ve.mute();
+        const ve = new rtc.MediaDomElement(view[0], peer);
 
-        console.log('peer joined!');
-
+        // remove the tag after peer left
         peer.on('left', function() {
             view.remove();
         });
-
-        peer.addDataChannel().then(function(channel) {
-            console.log("got da channel!");
-        }).catch(function(err) {
-            console.log(err);
-        });
-
-        peer.connect();
-    });
-
-    room.on('closed', function() {
-        $('body').html('Connection closed');
     });
 
     // join the room
-    room.connect().then(function() { console.log('connected!'); });
+    try {
+        await room.connect();
+    } catch(err) {
+        alert("Unable to join room: " + err.message)
+    }
 });
