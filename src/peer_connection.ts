@@ -472,6 +472,7 @@ export class PeerConnection extends EventEmitter {
           if(transceiver) { 
             if(typeof track !== 'string') {
               transceiver.sender.replaceTrack(track);
+              transceiver.direction = 'sendrecv';
             }
 
             if(init?.streams != null) {
