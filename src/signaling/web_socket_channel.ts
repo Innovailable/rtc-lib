@@ -83,6 +83,13 @@ export class WebSocketChannel extends EventEmitter implements Channel {
       // TODO: maybe do fancy buffer handling like DataChannel
       try {
         this.socket.send(JSON.stringify(msg));
+
+        if(this.socket.onclose) {
+          // @ts-ignore
+          this.socket.onclose();
+          this.socket.onclose = null;
+        }
+
         return Promise.resolve();
       } catch (err) {
         return Promise.reject(err);
