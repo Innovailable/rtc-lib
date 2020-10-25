@@ -20,17 +20,26 @@ type DataCb = (error: Error | undefined, data?: any) => void;
 
 export type CallingState = "idle" | "connecting" | "connected" | "closed" | "failed";
 
+export interface CallingOptions {
+  pingInterval: number;
+  timeout: number;
+  remotePing?: number;
+  remoteTimeout?: number;
+};
+
 export class Calling extends EventEmitter {
   id?: string;
   channel: Channel;
   room_options: Record<string,any>;
+  calling_options: CallingOptions;
   next_tid: number;
   answers: Record<string,Deferred<any>|DataCb>;
   hello_p: Promise<string>;
   ping_timeout?: ReturnType<typeof setTimeout>;
+  timeout_timeout?: ReturnType<typeof setTimeout>;
   state: CallingState = "idle";
 
-  constructor(channel: Channel, room_options: Record<string,any>) {
+  constructor(channel: Channel, room_options: Record<string,any>, calling_options: Partial<CallingOptions> = {}) {
     super();
 
     this.channel = channel;
@@ -38,11 +47,16 @@ export class Calling extends EventEmitter {
     this.next_tid = 0;
     this.answers = {};
 
+    this.calling_options = Object.assign({
+      pingInterval: 40 * 1000,
+      timeout: 100 * 1000,
+    }, calling_options);
+
     const hello_d = new Deferred<string>();
     this.hello_p = hello_d.promise;
 
     this.channel.on('message', msg => {
-      this.resetPing();
+      this.connectionAlive();
 
       switch (msg.type) {
         case 'hello':
@@ -114,14 +128,27 @@ export class Calling extends EventEmitter {
     }
 
     return this.channel.connect().then(() => {
-      this.resetPing();
+      this.connectionAlive();
 
-      return Promise.all([
-        this.request({type: 'remote_ping', time: 30 * 1000}),
-        this.hello_p
-      ]).then(([ping, hello]) => {
-        return hello;
-      });
+      let init_commands = [
+        this.hello_p,
+      ];
+
+      if(this.calling_options.remotePing) {
+        init_commands.push(this.request({
+          type: 'remote_ping',
+          time: this.calling_options.remotePing,
+        }));
+      }
+
+      if(this.calling_options.remoteTimeout) {
+        init_commands.push(this.request({
+          type: 'remote_timeout',
+          time: this.calling_options.remoteTimeout,
+        }));
+      }
+
+      return Promise.all(init_commands);
     }).then(() => {
       this.setState("connected");
     }).catch((err) => {
@@ -137,7 +164,6 @@ export class Calling extends EventEmitter {
     msg.tid = this.next_tid++;
 
     this.channel.send(msg);
-    this.resetPing();
 
     if (cb != null) {
       this.answers[msg.tid] = cb;
@@ -156,6 +182,10 @@ export class Calling extends EventEmitter {
     });
   }
 
+  connectionAlive(): void {
+    this.resetPing();
+    this.resetTimeout();
+  }
 
   resetPing(): void {
     if (this.ping_timeout) {
@@ -165,10 +195,18 @@ export class Calling extends EventEmitter {
     this.ping_timeout = setTimeout(() => {
       this.ping();
       this.resetPing();
-    }
-    , 60 * 1000);
+    }, this.calling_options.pingInterval);
   }
 
+  resetTimeout(): void {
+    if (this.timeout_timeout) {
+      clearTimeout(this.timeout_timeout);
+    }
+
+    this.timeout_timeout = setTimeout(() => {
+      this.close();
+    }, this.calling_options.timeout);
+  }
 
   subscribe(nsid: string): Promise<CallingNamespace> {
     // uses callback to avoid race conditions with promises
